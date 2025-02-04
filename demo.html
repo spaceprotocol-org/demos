@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BK506HJ8ND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-BK506HJ8ND');
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Protocol's Demo</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.91/Build/Cesium/Cesium.js"></script>
+    <script src="config.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.91/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loadingScreen">
+        <img src="loading.gif" alt="Loading">
+    </div>
+    <div id="cesiumContainer"></div>
+    <div id="infoBox" style="display: none;"></div>
+    <div id="sideNav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <div id="controls">
+            <label>
+                <input type="checkbox" name="property" value="top">
+                <span>Top 5 (Most Unique)</span>
+            </label>
+            <label>
+                <input type="checkbox" name="property" value="bottom">
+                <span>Bottom 5 (Least Unique)</span>
+            </label>
+            <label>
+                <button id="toggleOrbits" title="Intensive!">Toggle Orbits</button>
+            </label>
+        </div>
+        <div id="searchContainer">
+            <input type="text" id="searchInput" placeholder="NORAD ID"><button id="searchButton">Search</button>
+        </div>
+    </div>
+    <button id="openNavBtn" onclick="openNav()">☰</button>
+    <div id="legendContainer"></div>
+    <div id="topBottomInfoBox"></div>
+    <script src="main.js"></script>
+    <script>
+        function openNav() {
+            document.getElementById("sideNav").style.width = "250px";
+            document.getElementById("main").style.marginLeft = "250px";
+            document.getElementById("openNavBtn").style.display = 'none';
+        }
+
+        function closeNav() {
+            document.getElementById("sideNav").style.width = "0";
+            document.getElementById("main").style.marginLeft= "0";
+            document.getElementById("openNavBtn").style.display = 'block';
+        }
+    </script>
+</body>
+</html>
