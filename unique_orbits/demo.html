@@ -36,9 +36,26 @@
                 <input type="checkbox" name="property" value="bottom">
                 <span>Bottom 5 (Least Unique)</span>
             </label>
-            <label>
-                <button id="toggleOrbits" title="Intensive!">Toggle Orbits</button>
-            </label>
+            <!-- Added orbit classification filters -->
+            <div id="orbitFilters">
+                <h3 style="color:#fff; font-size:14px; margin-top:15px;">Orbit Filters</h3>
+                <label>
+                    <input type="checkbox" id="checkbox-leo" value="LEO">
+                    <span>LEO</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="checkbox-meo" value="MEO">
+                    <span>MEO</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="checkbox-geo" value="GEO">
+                    <span>GEO</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="checkbox-heo" value="HEO">
+                    <span>HEO</span>
+                </label>
+            </div>
         </div>
         <div id="searchContainer">
             <input type="text" id="searchInput" placeholder="NORAD ID"><button id="searchButton">Search</button>

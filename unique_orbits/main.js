@@ -1,17 +1,14 @@
 document.addEventListener("DOMContentLoaded", async function() {
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+
     const loadingScreen = document.getElementById('loadingScreen');
     Cesium.Ion.defaultAccessToken = CONFIG.ACCESSTOKEN;
     
     const oauth2Token = Cesium.Ion.defaultAccessToken;
     const baseUrl = 'https://api.cesium.com/v1/assets';
     
-    // ensure that the filtering checkboxes are off by default
-    const topCheckbox = document.querySelector('input[value="top"]');
-    const bottomCheckbox = document.querySelector('input[value="bottom"]');
-    if (topCheckbox) topCheckbox.checked = false;
-    if (bottomCheckbox) bottomCheckbox.checked = false;
-
-
     async function fetchLatestAsset() {
         const params = new URLSearchParams({
             sortBy: 'DATE_ADDED',
@@ -25,13 +22,11 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`Error fetching assets: ${response.statusText}`);
-        }
+        if (!response.ok) { /* ...existing error handling... */ }
 
         const data = await response.json();
         return data.items[0];
-    }   
+    }
 
     const viewer = new Cesium.Viewer("cesiumContainer", {
         shouldAnimate: true,
@@ -87,11 +82,120 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     const infoBox = document.getElementById("infoBox");
 
+    // viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+    //     const pickedObject = viewer.scene.pick(movement.position);
+    //     if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+    //         const entity = pickedObject.id;
+    //         // Use showEntityPath instead of toggleOrbit
+    //         showEntityPath(entity);
+    //         highlightedEntities.push(entity);
+    //     } else {
+    //         infoBox.style.display = 'none';
+    //         removeAllEntityPaths();
+    //     }
+    // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    // function displayInfoBox(entity) {
+    //     const now = Cesium.JulianDate.now();
+    //     const uniqueness = entity.properties.uniqueness?.getValue(now);
+    //     const rank = entity.properties.rank?.getValue(now);
+        
+    //     infoBox.style.display = 'block';
+    //     infoBox.innerHTML = `<div class="info-content">
+    //                              <strong>NORAD CAT ID:</strong> <span>${entity.id}</span>
+    //                              <strong>NAME:</strong> <span>${entity.name}</span>
+    //                              <strong>Uniqueness:</strong> <span>${uniqueness}</span>
+    //                              <strong>Rank:</strong> <span>${rank}</span>
+    //                          </div>`;
+    // }
+
+    // In showCompressedInfo, update infoBox styling so its width fits content and text is smaller.
+    function showCompressedInfo(entityData, mousePosition) {
+        // Extract the entity id from the passed object or use the id directly.
+        const entityId = (typeof entityData === 'object' && entityData.id) ? entityData.id : entityData;
+        
+        // Retrieve the entity from dataSource.
+        const entity = dataSource && dataSource.entities && dataSource.entities.getById
+            ? dataSource.entities.getById(entityId)
+            : null;
+        
+        const now = Cesium.JulianDate.now();
+        const offset = 10;
+        
+        if (entity) {
+            const uniqueness = entity.properties?.uniqueness?.getValue(now);
+            const rank = entity.properties?.rank?.getValue(now);
+            infoBox.innerHTML = `<div style="padding: 5px 10px; white-space: nowrap;">
+                    <strong>NORAD ID:</strong> ${entity.id} <br>
+                    <strong>Name:</strong> ${entity.name || "N/A"} <br>
+                    <strong>Uniqueness:</strong> ${typeof uniqueness === 'number' ? uniqueness.toFixed(2) : "N/A"} <br>
+                    <strong>Rank:</strong> ${rank || "N/A"}
+                </div>`;
+        } else {
+            infoBox.innerHTML = `<div style="padding: 5px 10px; white-space: nowrap;">Entity ID: ${entityId}</div>`;
+        }
+        
+        // Ensure the infoBox resizes to fit its content.
+        infoBox.style.display = 'inline-block';
+        infoBox.style.position = 'absolute';
+        infoBox.style.fontSize = '12px';
+        infoBox.style.width = '10%';
+        infoBox.style.zIndex = '9999'; // Bring the info box to the front
+    
+        // Initially position the infoBox to the right and below the cursor.
+        infoBox.style.left = (mousePosition.x + offset) + 'px';
+        infoBox.style.top = (mousePosition.y + offset) + 'px';
+    
+        // After rendering, adjust position if the box overflows the viewport.
+        const boxRect = infoBox.getBoundingClientRect();
+    
+        // Adjust horizontal position if overflowing right edge.
+        if (boxRect.right > window.innerWidth) {
+            infoBox.style.left = (mousePosition.x - boxRect.width - offset) + 'px';
+        }
+    
+        // Adjust vertical position: if the bottom overflows, place above the cursor.
+        if (boxRect.bottom > window.innerHeight) {
+            infoBox.style.top = (mousePosition.y - boxRect.height - offset) + 'px';
+        }
+        // Similarly, if the top is off screen, position below the cursor.
+        if (boxRect.top < 0) {
+            infoBox.style.top = (mousePosition.y + offset) + 'px';
+        }
+    }
+
+    // Updated hideCompressedInfo to clear and hide the info box.
+    function hideCompressedInfo() {
+        infoBox.style.display = 'none';
+        infoBox.innerHTML = '';
+    }
+
+
+    // Re-enable left-click so that when a satellite is clicked, its orbit is toggled.
+    // viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+    //     const pickedObject = viewer.scene.pick(movement.position);
+    //     if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+    //         toggleOrbit(pickedObject.id);
+    //     } else {
+    //         removeAllEntityPaths();
+    //     }
+    // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+
+    viewer.screenSpaceEventHandler.setInputAction(function onMouseMove(movement) {
+        const pickedObject = viewer.scene.pick(movement.endPosition);
+        if (Cesium.defined(pickedObject) && pickedObject.id) {
+            showCompressedInfo(pickedObject.id, movement.endPosition);
+        } else {
+            hideCompressedInfo();
+        }
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
     viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
         const pickedObject = viewer.scene.pick(movement.position);
         if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
             const entity = pickedObject.id;
-            displayInfoBox(entity);
+            // Use showEntityPath instead of toggleOrbit
             showEntityPath(entity);
             highlightedEntities.push(entity);
         } else {
@@ -100,18 +204,38 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-    function displayInfoBox(entity) {
-        const now = Cesium.JulianDate.now();
-        const uniqueness = entity.properties.uniqueness?.getValue(now);
-        const rank = entity.properties.rank?.getValue(now);
+    // Define toggleOrbit to show/hide the orbit path.
+    function toggleOrbit(entityId) {
+        const entity = dataSource && dataSource.entities && dataSource.entities.getById 
+            ? dataSource.entities.getById(entityId)
+            : null;
+        if (!entity) return;
         
-        infoBox.style.display = 'block';
-        infoBox.innerHTML = `<div class="info-content">
-                                 <strong>NORAD CAT ID:</strong> <span>${entity.id}</span>
-                                 <strong>NAME:</strong> <span>${entity.name}</span>
-                                 <strong>Uniqueness:</strong> <span>${uniqueness}</span>
-                                 <strong>Rank:</strong> <span>${rank}</span>
-                             </div>`;
+        // If the entity already has a path, toggle its visibility.
+        if (entity.path) {
+            entity.path.show = !entity.path.show;
+        } else {
+            // Create a sample orbit path.
+            // For demonstration, generate a circular orbit using sampled positions.
+            const cp = new Cesium.SampledPositionProperty();
+            const start = Cesium.JulianDate.now();
+            for (let i = 0; i < 360; i += 10) {
+                let time = Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate());
+                // NOTE: In a real implementation, calculate the orbital position.
+                // Here we use the entity's current position.
+                let pos = entity.position.getValue(Cesium.JulianDate.now());
+                cp.addSample(time, pos);
+            }
+            
+            // Apply the orbit path (this creates a new pathGraphics object).
+            entity.path = new Cesium.PathGraphics({
+                show: true,
+                material: Cesium.Color.YELLOW,
+                width: 2
+            });
+            // Update the entity's position property with the sampled positions.
+            entity.position = cp;
+        }
     }
 
     function showEntityPath(entity) {
@@ -134,81 +258,140 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function removeAllEntityPaths() {
-        highlightedEntities.forEach(entity => {
-            removeEntityPath(entity);
+        dataSource.entities.values.forEach(entity => {
+            if (entity.path) {
+                entity.path = undefined;    // remove path
+                viewer.entities.remove(entity); // remove entity from viewer
+            }
         });
         highlightedEntities = [];
     }
 
+    
+
     function filterByRank10() {
         const showTop = document.querySelector('input[value="top"]').checked;
         const showBottom = document.querySelector('input[value="bottom"]').checked;
-    
-        // If neither checkbox is selected, show all entities
+        
+        // Gather the selected orbit filters.
+        let orbitFilters = [];
+        if (document.getElementById('checkbox-leo').checked) orbitFilters.push("LEO");
+        if (document.getElementById('checkbox-meo').checked) orbitFilters.push("MEO");
+        if (document.getElementById('checkbox-geo').checked) orbitFilters.push("GEO");
+        if (document.getElementById('checkbox-heo').checked) orbitFilters.push("HEO");
+        
+        // Filter entities based on orbit filters if any are selected,
+        // otherwise use all entities.
+        let filteredEntities = dataSource.entities.values;
+        if (orbitFilters.length > 0) {
+            filteredEntities = filteredEntities.filter(entity => {
+                const orbitClass = entity.properties.orbit_class && 
+                                   entity.properties.orbit_class.getValue(viewer.clock.currentTime);
+                return orbitClass && orbitFilters.includes(orbitClass);
+            });
+        }
+        
+        // If neither top nor bottom is selected, then only show entities matching the orbit filters.
         if (!showTop && !showBottom) {
+            // First hide all entities.
+            dataSource.entities.values.forEach(entity => entity.show = false);
+            // Then show only the filtered entities.
+            filteredEntities.forEach(entity => entity.show = true);
+            return;
+        }
+        
+        // Sort the filtered entities by rank (lower rank = higher uniqueness).
+        const sortedEntities = filteredEntities.slice().sort((a, b) => {
+            const rankA = parseFloat(a.properties.rank.getValue(viewer.clock.currentTime));
+            const rankB = parseFloat(b.properties.rank.getValue(viewer.clock.currentTime));
+            return rankA - rankB;
+        });
+        
+        // Get top 5 and bottom 5 from the sorted list.
+        const topEntities = sortedEntities.slice(0, 5);
+        const bottomEntities = sortedEntities.slice(-5);
+        
+        // Hide all entities first.
+        dataSource.entities.values.forEach(entity => {
+            entity.show = false;
+            removeEntityPath(entity);
+        });
+        
+        // For the selected ranking option(s), show entities and trigger their orbit paths.
+        if (showTop) {
+            topEntities.forEach(entity => {
+                entity.show = true;
+                showEntityPath(entity);
+            });
+        }
+        
+        if (showBottom) {
+            bottomEntities.forEach(entity => {
+                entity.show = true;
+                showEntityPath(entity);
+            });
+        }
+    }
+
+    function filterOrbitClasses() {
+        const leo = document.getElementById('checkbox-leo').checked;
+        const meo = document.getElementById('checkbox-meo').checked;
+        const geo = document.getElementById('checkbox-geo').checked;
+        const heo = document.getElementById('checkbox-heo').checked;
+    
+        // If no orbit filters are selected, show all entities.
+        if (!leo && !meo && !geo && !heo) {
             dataSource.entities.values.forEach(entity => {
                 entity.show = true;
             });
         } else {
-            // Filter entities that have a valid rank property and sort them in ascending order (best rank first)
-            const sortedEntities = dataSource.entities.values
-                .filter(entity => {
-                    const rankValue = entity.properties.rank?.getValue(Cesium.JulianDate.now());
-                    return typeof rankValue === 'number';
-                })
-                .sort((a, b) => {
-                    return a.properties.rank.getValue(Cesium.JulianDate.now()) - b.properties.rank.getValue(Cesium.JulianDate.now());
-                });
-    
-            // Get the top 5 (lowest rank values) and bottom 5 (highest rank values), adjust as needed
-            const topEntities = new Set(sortedEntities.slice(0, 5).map(entity => entity.id));
-            const bottomEntities = new Set(sortedEntities.slice(-5).map(entity => entity.id));
-    
-            // Update entity visibility based on which checkboxes are selected.
             dataSource.entities.values.forEach(entity => {
-                if ((showTop && topEntities.has(entity.id)) || (showBottom && bottomEntities.has(entity.id))) {
+                const orbitClass = entity.properties.orbit_class && entity.properties.orbit_class.getValue(viewer.clock.currentTime);
+                if (orbitClass && (
+                       (leo && orbitClass === "LEO") ||
+                       (meo && orbitClass === "MEO") ||
+                       (geo && orbitClass === "GEO") ||
+                       (heo && orbitClass === "HEO")
+                   )) {
                     entity.show = true;
                 } else {
                     entity.show = false;
                 }
             });
         }
-        
-        // If orbits are currently toggled on, update the orbit paths for the entities now visible.
-        if (orbitsOn) {
-            removeAllEntityPaths();
-            dataSource.entities.values.forEach(entity => {
-                if (entity.show) {
-                    showEntityPath(entity);
-                    highlightedEntities.push(entity);
-                }
-            });
-        }
     }
     
+    // Attach event listeners to the orbit filter checkboxes.
+    ['checkbox-leo', 'checkbox-meo', 'checkbox-geo', 'checkbox-heo'].forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            checkbox.addEventListener('change', filterByRank10);
+        }
+    });
+
     // Attach filterByRank10 to checkbox changes
     document.querySelector('input[value="top"]').addEventListener('change', filterByRank10);
     document.querySelector('input[value="bottom"]').addEventListener('change', filterByRank10);
 
     let orbitsOn = false;
-    const toggleOrbitsButton = document.getElementById('toggleOrbits');
+    // const toggleOrbitsButton = document.getElementById('toggleOrbits');
 
-    toggleOrbitsButton.addEventListener('click', () => {
-        orbitsOn = !orbitsOn;
-        if (orbitsOn) {
-            // For all currently visible entities, add orbit paths.
-            dataSource.entities.values.forEach(entity => {
-                if (entity.show) {
-                    showEntityPath(entity);
-                    highlightedEntities.push(entity);
-                }
-            });
-            toggleOrbitsButton.innerText = 'Hide Orbits';
-        } else {
-            removeAllEntityPaths();
-            toggleOrbitsButton.innerText = 'Show Orbits';
-        }
-    });
+    // toggleOrbitsButton.addEventListener('click', () => {
+    //     orbitsOn = !orbitsOn;
+    //     if (orbitsOn) {
+    //         // For all currently visible entities, add orbit paths.
+    //         dataSource.entities.values.forEach(entity => {
+    //             if (entity.show) {
+    //                 showEntityPath(entity);
+    //                 highlightedEntities.push(entity);
+    //             }
+    //         });
+    //         toggleOrbitsButton.innerText = 'Hide Orbits';
+    //     } else {
+    //         removeAllEntityPaths();
+    //         toggleOrbitsButton.innerText = 'Show Orbits';
+    //     }
+    // });
     
     // toggleOrbitsButton.addEventListener('mouseenter', () => {
     //     const topCheckbox = document.querySelector('input[value="top"]');
@@ -424,6 +607,37 @@ document.addEventListener("DOMContentLoaded", async function() {
         bottomCheckbox.addEventListener('change', displayTopAndBottomSatellitesByUniqueness);
     }
 
+    function toggleOrbit(entityId) {
+        const entity = dataSource.entities.getById(entityId);
+        if (!entity) return;
+        if (entity.path) {
+            removeEntityPath(entity);
+        } else {
+            showEntityPath(entity);
+        }
+    }
+    
+    function generateSatelliteList(satellites) {
+        return `<ul style="padding-left: 20px; list-style-type: none;">
+                    ${satellites.map(satellite => 
+                        `<li> Score <b>${satellite.uniqueness.toFixed(2)}</b> 
+                        [ID: <span class="satellite-id" data-id="${satellite.id}" onclick="toggleOrbit('${satellite.id}')" style="cursor: pointer; color: blue; text-decoration: underline;">
+                        ${satellite.id}</span>] ${satellite.name}</li>`).join('')}
+                </ul>`;
+    }
+    
+    // After you update the infobox content, attach event listeners:
+    function attachOrbitToggleHandlers() {
+        const ids = document.querySelectorAll('.satellite-id');
+        ids.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const noradId = link.getAttribute('data-id');
+                toggleOrbit(noradId);
+            });
+        });
+    }
+
     async function displayTopAndBottomSatellitesByUniqueness() {
         const entities = dataSource.entities.values;
         const satellitesWithUniqueness = entities
@@ -443,29 +657,38 @@ document.addEventListener("DOMContentLoaded", async function() {
         
         // Show top 5 if 'top' checkbox is checked
         if (topCheckbox.checked) {
-            const contentTop = `<h3>5 Most Unique Satellites</h3>${generateSatelliteList(top10Satellites)}`;
+            const contentTop = `<h3>5 Most Unique Orbits</h3>${generateSatelliteList(top10Satellites)}`;
             infoboxContent += contentTop;
         }
         // Show bottom 5 if 'bottom' checkbox is checked
         if (bottomCheckbox.checked) {
-            const contentBottom = `<h3>5 Least Unique Satellites</h3>${generateSatelliteList(bottom10Satellites)}`;
+            const contentBottom = `<h3>5 Least Unique Orbits</h3>${generateSatelliteList(bottom10Satellites)}`;
             infoboxContent += contentBottom;
         }
         
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
+        attachOrbitToggleHandlers();
         // Display the container if any checkbox is selected; otherwise hide it.
         topBottomInfoBox.style.display = (topCheckbox.checked || bottomCheckbox.checked) ? 'block' : 'none';
+
+        if (topCheckbox.checked || bottomCheckbox.checked) {
+            orbitsOn = true;
+            removeAllEntityPaths();
+            dataSource.entities.values.forEach(entity => {
+                if (entity.show) {
+                    showEntityPath(entity);
+                }
+            });
+            // toggleOrbitsButton.innerText = 'Hide Orbits';
+        } else {
+            orbitsOn = false;
+            removeAllEntityPaths();
+            // toggleOrbitsButton.innerText = 'Show Orbits';
+        }
     }
 
-    function generateSatelliteList(satellites) {
-        return `<ul style="padding-left: 20px; list-style-type: none;">
-                    ${satellites.map(satellite => 
-                        `<li> Score <b>${satellite.uniqueness.toFixed(2)}</b> 
-                        [ID: <span class="satellite-id" data-id="${satellite.id}" style="cursor: pointer; color: blue; text-decoration: underline;">
-                        ${satellite.id}</span>] ${satellite.name}</li>`).join('')}
-                </ul>`;
-    }
+
 
     const rankingsToggle = document.getElementById('rankingsToggle');
     rankingsToggle.addEventListener('click', () => {

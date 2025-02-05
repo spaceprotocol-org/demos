@@ -86,7 +86,7 @@ button:hover {
 
 #sideNav {
     height: 50%;
-    width: 15%;
+    width: 18%;
     position: fixed;
     z-index: 1;
     top: 0;
@@ -257,7 +257,6 @@ button:hover {
 
 #openNavBtn {
     position: fixed;
-    width: 3%;
     top: 10px;
     left: 10px;
     font-size: 20px;
