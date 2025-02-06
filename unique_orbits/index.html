@@ -28,31 +28,38 @@
     <div id="sideNav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <div id="controls">
-            <label>
-                <input type="checkbox" name="property" value="top">
-                <span>Top 5 (Most Unique)</span>
-            </label>
-            <label>
-                <input type="checkbox" name="property" value="bottom">
-                <span>Bottom 5 (Least Unique)</span>
-            </label>
+            <div id="displayOptions">
+                <h3 style="color:#fff; font-size:14px; margin-top:15px;">Display Options</h3>
+                <label>
+                    <input type="radio" name="displayOptions" id="property" value="toggleUnique">
+                    <span>toggleUnique</span>
+                </label>
+                <label>
+                    <input type="radio" name="displayOptions" id="property" value="toggleAll">
+                    <span>toggleAll</span>
+                </label>
+            </div>
             <!-- Added orbit classification filters -->
             <div id="orbitFilters">
                 <h3 style="color:#fff; font-size:14px; margin-top:15px;">Orbit Filters</h3>
                 <label>
-                    <input type="checkbox" id="checkbox-leo" value="LEO">
+                    <input type="radio" name="orbitFilters" id="radio-all" value="all">
+                    <span>All</span>
+                </label>
+                <label>
+                    <input type="radio" name="orbitFilters" id="radio-leo" value="LEO">
                     <span>LEO</span>
                 </label>
                 <label>
-                    <input type="checkbox" id="checkbox-meo" value="MEO">
+                    <input type="radio" name="orbitFilters" id="radio-meo" value="MEO">
                     <span>MEO</span>
                 </label>
                 <label>
-                    <input type="checkbox" id="checkbox-geo" value="GEO">
+                    <input type="radio" name="orbitFilters" id="radio-geo" value="GEO">
                     <span>GEO</span>
                 </label>
                 <label>
-                    <input type="checkbox" id="checkbox-heo" value="HEO">
+                    <input type="radio" name="orbitFilters" id="radio-heo" value="HEO">
                     <span>HEO</span>
                 </label>
             </div>

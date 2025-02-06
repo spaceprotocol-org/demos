@@ -1,14 +1,14 @@
 document.addEventListener("DOMContentLoaded", async function() {
-    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-
     const loadingScreen = document.getElementById('loadingScreen');
     Cesium.Ion.defaultAccessToken = CONFIG.ACCESSTOKEN;
     
     const oauth2Token = Cesium.Ion.defaultAccessToken;
     const baseUrl = 'https://api.cesium.com/v1/assets';
     
+    document.getElementById('radio-all').checked = true;
+    document.querySelector('input[value="toggleAll"]').checked = true;
+
+
     async function fetchLatestAsset() {
         const params = new URLSearchParams({
             sortBy: 'DATE_ADDED',
@@ -22,11 +22,13 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         });
 
-        if (!response.ok) { /* ...existing error handling... */ }
+        if (!response.ok) {
+            throw new Error(`Error fetching assets: ${response.statusText}`);
+        }
 
         const data = await response.json();
         return data.items[0];
-    }
+    }   
 
     const viewer = new Cesium.Viewer("cesiumContainer", {
         shouldAnimate: true,
@@ -81,33 +83,6 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     const infoBox = document.getElementById("infoBox");
-
-    // viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
-    //     const pickedObject = viewer.scene.pick(movement.position);
-    //     if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
-    //         const entity = pickedObject.id;
-    //         // Use showEntityPath instead of toggleOrbit
-    //         showEntityPath(entity);
-    //         highlightedEntities.push(entity);
-    //     } else {
-    //         infoBox.style.display = 'none';
-    //         removeAllEntityPaths();
-    //     }
-    // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-    // function displayInfoBox(entity) {
-    //     const now = Cesium.JulianDate.now();
-    //     const uniqueness = entity.properties.uniqueness?.getValue(now);
-    //     const rank = entity.properties.rank?.getValue(now);
-        
-    //     infoBox.style.display = 'block';
-    //     infoBox.innerHTML = `<div class="info-content">
-    //                              <strong>NORAD CAT ID:</strong> <span>${entity.id}</span>
-    //                              <strong>NAME:</strong> <span>${entity.name}</span>
-    //                              <strong>Uniqueness:</strong> <span>${uniqueness}</span>
-    //                              <strong>Rank:</strong> <span>${rank}</span>
-    //                          </div>`;
-    // }
 
     // In showCompressedInfo, update infoBox styling so its width fits content and text is smaller.
     function showCompressedInfo(entityData, mousePosition) {
@@ -172,14 +147,14 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 
     // Re-enable left-click so that when a satellite is clicked, its orbit is toggled.
-    // viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
-    //     const pickedObject = viewer.scene.pick(movement.position);
-    //     if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
-    //         toggleOrbit(pickedObject.id);
-    //     } else {
-    //         removeAllEntityPaths();
-    //     }
-    // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+        const pickedObject = viewer.scene.pick(movement.position);
+        if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+            toggleOrbit(pickedObject.id);
+        } else {
+            removeAllEntityPaths();
+        }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
 
     viewer.screenSpaceEventHandler.setInputAction(function onMouseMove(movement) {
@@ -267,40 +242,28 @@ document.addEventListener("DOMContentLoaded", async function() {
         highlightedEntities = [];
     }
 
-    
-
     function filterByRank10() {
-        const showTop = document.querySelector('input[value="top"]').checked;
-        const showBottom = document.querySelector('input[value="bottom"]').checked;
-        
-        // Gather the selected orbit filters.
+        //just make sure that the toggleUnique radio is actually checked
+        const istoggleUnique = document.querySelector('input[value="toggleUnique"]').checked;
+
+        // Gather the selected orbit filters
         let orbitFilters = [];
-        if (document.getElementById('checkbox-leo').checked) orbitFilters.push("LEO");
-        if (document.getElementById('checkbox-meo').checked) orbitFilters.push("MEO");
-        if (document.getElementById('checkbox-geo').checked) orbitFilters.push("GEO");
-        if (document.getElementById('checkbox-heo').checked) orbitFilters.push("HEO");
+        if (document.getElementById('radio-all').checked) orbitFilters.push("LEO", "MEO", "GEO", "HEO");
+        if (document.getElementById('radio-leo').checked) orbitFilters.push("LEO");
+        if (document.getElementById('radio-meo').checked) orbitFilters.push("MEO");
+        if (document.getElementById('radio-geo').checked) orbitFilters.push("GEO");
+        if (document.getElementById('radio-heo').checked) orbitFilters.push("HEO");
         
-        // Filter entities based on orbit filters if any are selected,
-        // otherwise use all entities.
+        // Filter entities based on orbit filters if any are selected, otherwise use all entities.
         let filteredEntities = dataSource.entities.values;
         if (orbitFilters.length > 0) {
             filteredEntities = filteredEntities.filter(entity => {
-                const orbitClass = entity.properties.orbit_class && 
-                                   entity.properties.orbit_class.getValue(viewer.clock.currentTime);
+                const orbitClass = entity.properties.orbit_class && entity.properties.orbit_class.getValue(viewer.clock.currentTime);
                 return orbitClass && orbitFilters.includes(orbitClass);
             });
         }
-        
-        // If neither top nor bottom is selected, then only show entities matching the orbit filters.
-        if (!showTop && !showBottom) {
-            // First hide all entities.
-            dataSource.entities.values.forEach(entity => entity.show = false);
-            // Then show only the filtered entities.
-            filteredEntities.forEach(entity => entity.show = true);
-            return;
-        }
-        
-        // Sort the filtered entities by rank (lower rank = higher uniqueness).
+                
+        // Sort the filtered entities by rank (assumes lower rank equals higher uniqueness)
         const sortedEntities = filteredEntities.slice().sort((a, b) => {
             const rankA = parseFloat(a.properties.rank.getValue(viewer.clock.currentTime));
             const rankB = parseFloat(b.properties.rank.getValue(viewer.clock.currentTime));
@@ -312,100 +275,79 @@ document.addEventListener("DOMContentLoaded", async function() {
         const bottomEntities = sortedEntities.slice(-5);
         
         // Hide all entities first.
-        dataSource.entities.values.forEach(entity => {
-            entity.show = false;
-            removeEntityPath(entity);
-        });
+        dataSource.entities.values.forEach(entity => entity.show = false);
         
-        // For the selected ranking option(s), show entities and trigger their orbit paths.
-        if (showTop) {
-            topEntities.forEach(entity => {
-                entity.show = true;
-                showEntityPath(entity);
-            });
+        // Show top satellites if radio is checked.
+        if (istoggleUnique) {
+            topEntities.forEach(entity => entity.show = true);
+            bottomEntities.forEach(entity => entity.show = true);
+            // show their orbits
+            topEntities.forEach(entity => showEntityPath(entity));
+            bottomEntities.forEach(entity => showEntityPath(entity));
+
+        } else {
+            console.log("filterByRank10: toggleUnique radio is not checked");
         }
         
-        if (showBottom) {
-            bottomEntities.forEach(entity => {
-                entity.show = true;
-                showEntityPath(entity);
-            });
-        }
     }
 
     function filterOrbitClasses() {
-        const leo = document.getElementById('checkbox-leo').checked;
-        const meo = document.getElementById('checkbox-meo').checked;
-        const geo = document.getElementById('checkbox-geo').checked;
-        const heo = document.getElementById('checkbox-heo').checked;
-    
-        // If no orbit filters are selected, show all entities.
-        if (!leo && !meo && !geo && !heo) {
-            dataSource.entities.values.forEach(entity => {
-                entity.show = true;
-            });
-        } else {
-            dataSource.entities.values.forEach(entity => {
-                const orbitClass = entity.properties.orbit_class && entity.properties.orbit_class.getValue(viewer.clock.currentTime);
-                if (orbitClass && (
-                       (leo && orbitClass === "LEO") ||
-                       (meo && orbitClass === "MEO") ||
-                       (geo && orbitClass === "GEO") ||
-                       (heo && orbitClass === "HEO")
-                   )) {
+
+        const all = document.getElementById('radio-all').checked;
+        const leo = document.getElementById('radio-leo').checked;
+        const meo = document.getElementById('radio-meo').checked;
+        const geo = document.getElementById('radio-geo').checked;
+        const heo = document.getElementById('radio-heo').checked;
+
+        // handle the case where the toggleAll radio is selected
+        const toggleAll = document.querySelector('input[value="toggleAll"]').checked;
+        if (toggleAll) {
+            removeAllEntityPaths();
+            if (all) {
+                dataSource.entities.values.forEach(entity => {
                     entity.show = true;
+                });
+            } else {
+                dataSource.entities.values.forEach(entity => {
+                    const orbitClass = entity.properties.orbit_class && entity.properties.orbit_class.getValue(viewer.clock.currentTime);
+                    if (orbitClass && (
+                           (leo && orbitClass === "LEO") ||
+                           (meo && orbitClass === "MEO") ||
+                           (geo && orbitClass === "GEO") ||
+                           (heo && orbitClass === "HEO")
+                       )) {
+                        entity.show = true;
+                    } else {
+                        entity.show = false;
+                        console.log("issues filtering the orbits");
+                    }
+                });
+            }
+        } else { // handle the case where the toggleUnique radio is selected
+            filterByRank10();
+        }  
+    }
+        
+    // Attach event listeners to the display change radios
+    document.querySelector('input[value="toggleUnique"]').addEventListener('change', filterByRank10);
+    // if the all radio is selected, show all entities for the given orbit class
+    document.querySelector('input[value="toggleAll"]').addEventListener('change', filterOrbitClasses);
+
+    // if there is a change in any of the orbit filter radios
+    ['radio-all', 'radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'].forEach(id => {
+        const radio = document.getElementById(id);
+        if (radio) {
+            radio.addEventListener('change', () => {
+                // if toggleUnique is active, recalc and render top & bottom 5 entities
+                if (document.querySelector('input[value="toggleUnique"]').checked) {
+                    filterByRank10();
                 } else {
-                    entity.show = false;
+                    filterOrbitClasses();
                 }
             });
         }
-    }
-    
-    // Attach event listeners to the orbit filter checkboxes.
-    ['checkbox-leo', 'checkbox-meo', 'checkbox-geo', 'checkbox-heo'].forEach(id => {
-        const checkbox = document.getElementById(id);
-        if (checkbox) {
-            checkbox.addEventListener('change', filterByRank10);
-        }
     });
 
-    // Attach filterByRank10 to checkbox changes
-    document.querySelector('input[value="top"]').addEventListener('change', filterByRank10);
-    document.querySelector('input[value="bottom"]').addEventListener('change', filterByRank10);
-
-    let orbitsOn = false;
-    // const toggleOrbitsButton = document.getElementById('toggleOrbits');
-
-    // toggleOrbitsButton.addEventListener('click', () => {
-    //     orbitsOn = !orbitsOn;
-    //     if (orbitsOn) {
-    //         // For all currently visible entities, add orbit paths.
-    //         dataSource.entities.values.forEach(entity => {
-    //             if (entity.show) {
-    //                 showEntityPath(entity);
-    //                 highlightedEntities.push(entity);
-    //             }
-    //         });
-    //         toggleOrbitsButton.innerText = 'Hide Orbits';
-    //     } else {
-    //         removeAllEntityPaths();
-    //         toggleOrbitsButton.innerText = 'Show Orbits';
-    //     }
-    // });
-    
-    // toggleOrbitsButton.addEventListener('mouseenter', () => {
-    //     const topCheckbox = document.querySelector('input[value="top"]');
-    //     const bottomCheckbox = document.querySelector('input[value="bottom"]');
-    //     if (!topCheckbox.checked && !bottomCheckbox.checked) {
-    //         toggleOrbitsButton.setAttribute('title', 'Computationally intensive');
-    //     } else {
-    //         toggleOrbitsButton.removeAttribute('title');
-    //     }
-    // });
-    
-    // toggleOrbitsButton.addEventListener('mouseleave', () => {
-    //     toggleOrbitsButton.removeAttribute('title');
-    // });
 
     function updateColors(property, numberOfBins = 5) {
         let minValue = Infinity;
@@ -517,7 +459,6 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     updateColors('uniqueness', 5);
-    // document.querySelector('input[value="uniqueness"]').checked = true;
 
     const searchButton = document.getElementById('searchButton');
     const searchInput = document.getElementById('searchInput');
@@ -572,40 +513,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         infoBox.style.display = 'none';
     });
 
-    async function displayTopAndBottomSatellitesByDIT() {
-        const entities = dataSource.entities.values;
-        const satellitesWithDIT = entities
-            .map(entity => ({
-                id: entity.id,
-                name: entity.name,
-                DIT: entity.properties.DIT?.getValue(Cesium.JulianDate.now())
-            }))
-            .filter(satellite => satellite.DIT !== undefined);
 
-        satellitesWithDIT.sort((a, b) => a.DIT - b.DIT);
-
-        const top5Satellites = satellitesWithDIT.slice(-5).reverse();
-        const bottom5Satellites = satellitesWithDIT.slice(0, 10);
-        // <div><h3>Highest ranked by L-DIT</h3>${generateSatelliteList(top5Satellites)}</div>
-        const infoboxContent = `<h3>Highest risk (lowest score) as ranked by L-DIT</h3>${generateSatelliteList(bottom5Satellites)}`;
-        const topBottomInfoBox = document.getElementById('topBottomInfoBox');
-        topBottomInfoBox.innerHTML = infoboxContent;
-        topBottomInfoBox.style.display = 'none';
-        
-        document.querySelectorAll('.satellite-id').forEach(item => {
-            item.addEventListener('click', function() {
-                const searchId = this.dataset.id;
-                performSearch(searchId);
-            });
-        });
-    }
-
-    if (topCheckbox) {
-        topCheckbox.addEventListener('change', displayTopAndBottomSatellitesByUniqueness);
-    }
-    if (bottomCheckbox) {
-        bottomCheckbox.addEventListener('change', displayTopAndBottomSatellitesByUniqueness);
-    }
 
     function toggleOrbit(entityId) {
         const entity = dataSource.entities.getById(entityId);
@@ -655,12 +563,12 @@ document.addEventListener("DOMContentLoaded", async function() {
     
         let infoboxContent = '';
         
-        // Show top 5 if 'top' checkbox is checked
+        // Show top 5 if 'top' radio is checked
         if (topCheckbox.checked) {
             const contentTop = `<h3>5 Most Unique Orbits</h3>${generateSatelliteList(top10Satellites)}`;
             infoboxContent += contentTop;
         }
-        // Show bottom 5 if 'bottom' checkbox is checked
+        // Show bottom 5 if 'bottom' radio is checked
         if (bottomCheckbox.checked) {
             const contentBottom = `<h3>5 Least Unique Orbits</h3>${generateSatelliteList(bottom10Satellites)}`;
             infoboxContent += contentBottom;
@@ -669,7 +577,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
         attachOrbitToggleHandlers();
-        // Display the container if any checkbox is selected; otherwise hide it.
+        // Display the container if any radio is selected; otherwise hide it.
         topBottomInfoBox.style.display = (topCheckbox.checked || bottomCheckbox.checked) ? 'block' : 'none';
 
         if (topCheckbox.checked || bottomCheckbox.checked) {
