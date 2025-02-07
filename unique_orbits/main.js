@@ -222,7 +222,11 @@ document.addEventListener("DOMContentLoaded", async function() {
                 )
             });
         }
-        viewer.entities.add(entity);
+        if (!viewer.entities.contains(entity)) {
+            viewer.entities.add(entity);
+        }
+    
+        entity.show = true;
     }
 
     function removeEntityPath(entity) {
@@ -284,7 +288,6 @@ document.addEventListener("DOMContentLoaded", async function() {
             // show their orbits
             topEntities.forEach(entity => showEntityPath(entity));
             bottomEntities.forEach(entity => showEntityPath(entity));
-
         } else {
             console.log("filterByRank10: toggleUnique radio is not checked");
         }
@@ -324,6 +327,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 });
             }
         } else { // handle the case where the toggleUnique radio is selected
+            console.log('filterOrbitClasses: toggleUnique radio is checked');
             filterByRank10();
         }  
     }
@@ -337,11 +341,14 @@ document.addEventListener("DOMContentLoaded", async function() {
     ['radio-all', 'radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'].forEach(id => {
         const radio = document.getElementById(id);
         if (radio) {
-            radio.addEventListener('change', () => {
-                // if toggleUnique is active, recalc and render top & bottom 5 entities
+
+            radio.addEventListener('change', function() {
                 if (document.querySelector('input[value="toggleUnique"]').checked) {
+                    console.log('calling filterByRank10');
                     filterByRank10();
+                    displayTopAndBottomSatellitesByUniqueness();
                 } else {
+                    console.log('calling filterOrbitClasses');
                     filterOrbitClasses();
                 }
             });
