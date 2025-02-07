@@ -645,7 +645,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             sat.total = overallTotalSatellites;
         });
 
-        let displayOrbitText = document.getElementById('radio-all').checked ? "ALL" : orbitFilters.join(', ');
+        let displayOrbitText = document.getElementById('radio-all').checked ? "GLOBAL" : orbitFilters.join(', ');
 
         // Build the info box content using generateSatelliteList.
         let infoboxContent = `<h3>5 Most Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topSatellites);
