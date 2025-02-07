@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         await viewer.dataSources.add(dataSource);
         viewer.clock.currentTime = Cesium.JulianDate.now();
         viewer.clock.multiplier = 50;
+
         const step = 10;
 
         const animationViewModel = viewer.animation.viewModel;
@@ -96,32 +97,32 @@ document.addEventListener("DOMContentLoaded", async function() {
         
         const now = Cesium.JulianDate.now();
         const offset = 10;
-
-        // -----
-
-        // Getting the rank of the given satellite on hover
-
-        let satellites = dataSource.entities.values
-        .map(ent => ({
-            id: ent.id,
-            uniqueness: ent.properties.uniqueness?.getValue(now)
-        }))
-        .filter(sat => sat.uniqueness !== undefined);
     
+        // -----
+    
+        // Getting the rank of the given satellite on hover
+        let satellites = dataSource.entities.values
+            .map(ent => ({
+                id: ent.id,
+                uniqueness: ent.properties.uniqueness?.getValue(now)
+            }))
+            .filter(sat => sat.uniqueness !== undefined);
+        
         satellites.sort((a, b) => a.uniqueness - b.uniqueness);
         
         const totalSatellites = satellites.length;
         const rankIndex = satellites.findIndex(sat => sat.id === entity.id);
         const rankText = rankIndex !== -1 ? `Rank: ${rankIndex + 1} / ${totalSatellites}` : '';
-
-
+    
         if (entity) {
             const uniqueness = entity.properties?.uniqueness?.getValue(now);
-            const rank = entity.properties?.rank?.getValue(now);
+            const uniquenessStr = (typeof uniqueness === 'number')
+                ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
+                : "N/A";
             infoBox.innerHTML = `<div style="padding: 5px 10px; white-space: nowrap;">
                     <strong>NORAD ID:</strong> ${entity.id} <br>
                     <strong>Name:</strong> ${entity.name || "N/A"} <br>
-                    <strong>Uniqueness:</strong> ${typeof uniqueness === 'number' ? uniqueness.toFixed(2) : "N/A"} <br>
+                    <strong>Uniqueness:</strong> ${uniquenessStr} <br>
                     <strong>Rank:</strong> ${rankText || "N/A"}
                 </div>`;
         } else {
@@ -554,13 +555,18 @@ document.addEventListener("DOMContentLoaded", async function() {
     
     function generateSatelliteList(satellites) {
         return `<ul style="padding-left: 20px; list-style-type: none;">
-                    ${satellites.map(satellite => 
-                        `<li>
-                            Score: <b>${satellite.uniqueness.toFixed(2)}</b> 
-                            [ID: <span class="satellite-id" data-id="${satellite.id}" onclick="toggleOrbit('${satellite.id}')" style="cursor: pointer; color: blue; text-decoration: underline;">${satellite.id}</span>]
+                    ${satellites.map(satellite => {
+                        const uniquenessStr = satellite.uniqueness < 0.01 
+                            ? satellite.uniqueness.toExponential(2) 
+                            : satellite.uniqueness.toFixed(2);
+                        return `<li>
+                            Score: <b>${uniquenessStr}</b> 
+                            [ID: <span class="satellite-id" data-id="${satellite.id}" onclick="toggleOrbit('${satellite.id}')" style="cursor: pointer; color: blue; text-decoration: underline;">
+                            ${satellite.id}</span>]
                             Rank: <b>${satellite.rank} / ${satellite.total}</b> 
                             ${satellite.name}
-                         </li>`).join('')}
+                         </li>`;
+                    }).join('')}
                 </ul>`;
     }
     
@@ -642,8 +648,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         let displayOrbitText = document.getElementById('radio-all').checked ? "ALL" : orbitFilters.join(', ');
 
         // Build the info box content using generateSatelliteList.
-        let infoboxContent = `<h3>Top 5 Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topSatellites);
-        infoboxContent += `<h3>Bottom 5 Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(bottomSatellites);
+        let infoboxContent = `<h3>5 Most Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topSatellites);
+        infoboxContent += `<h3>5 Least Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(bottomSatellites);
 
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
