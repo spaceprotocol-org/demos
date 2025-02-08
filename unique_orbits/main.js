@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     const oauth2Token = Cesium.Ion.defaultAccessToken;
     const baseUrl = 'https://api.cesium.com/v1/assets';
     
-    document.getElementById('radio-all').checked = true;
+    document.getElementById('radio-leo').checked = true;
     document.querySelector('input[value="toggleAll"]').checked = true;
 
 
@@ -113,6 +113,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         const totalSatellites = satellites.length;
         const rankIndex = satellites.findIndex(sat => sat.id === entity.id);
         const rankText = rankIndex !== -1 ? `Rank: ${rankIndex + 1} / ${totalSatellites}` : '';
+        
     
         if (entity) {
             const uniqueness = entity.properties?.uniqueness?.getValue(now);
@@ -123,7 +124,6 @@ document.addEventListener("DOMContentLoaded", async function() {
                     <strong>NORAD ID:</strong> ${entity.id} <br>
                     <strong>Name:</strong> ${entity.name || "N/A"} <br>
                     <strong>Uniqueness:</strong> ${uniquenessStr} <br>
-                    <strong>Rank:</strong> ${rankText || "N/A"}
                 </div>`;
         } else {
             infoBox.innerHTML = `<div style="padding: 5px 10px; white-space: nowrap;">Entity ID: ${entityId}</div>`;
@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         // Gather the selected orbit filters
         let orbitFilters = [];
-        if (document.getElementById('radio-all').checked) orbitFilters.push("LEO", "MEO", "GEO", "HEO");
+        // if (document.getElementById('radio-all').checked) orbitFilters.push("LEO", "MEO", "GEO", "HEO");
         if (document.getElementById('radio-leo').checked) orbitFilters.push("LEO");
         if (document.getElementById('radio-meo').checked) orbitFilters.push("MEO");
         if (document.getElementById('radio-geo').checked) orbitFilters.push("GEO");
@@ -290,8 +290,10 @@ document.addEventListener("DOMContentLoaded", async function() {
         const sortedEntities = filteredEntities.slice().sort((a, b) => {
             const rankA = parseFloat(a.properties.rank.getValue(viewer.clock.currentTime));
             const rankB = parseFloat(b.properties.rank.getValue(viewer.clock.currentTime));
-            return rankA - rankB;
+            return rankA < rankB;
         });
+
+        // console.log(sortedEntities)
         
         // Get top 5 and bottom 5 from the sorted list.
         const topEntities = sortedEntities.slice(0, 5);
@@ -318,11 +320,12 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     function filterOrbitClasses() {
 
-        const all = document.getElementById('radio-all').checked;
+        // const all = document.getElementById('radio-all').checked;
         const leo = document.getElementById('radio-leo').checked;
         const meo = document.getElementById('radio-meo').checked;
         const geo = document.getElementById('radio-geo').checked;
         const heo = document.getElementById('radio-heo').checked;
+        const all = leo;
 
         // handle the case where the toggleAll radio is selected
         const toggleAll = document.querySelector('input[value="toggleAll"]').checked;
@@ -362,7 +365,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     document.querySelector('input[value="toggleAll"]').addEventListener('change', filterOrbitClasses);
 
     // if there is a change in any of the orbit filter radios
-    ['radio-all', 'radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'].forEach(id => {
+    ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'].forEach(id => {
         const radio = document.getElementById(id);
         if (radio) {
             radio.addEventListener('change', function() {
@@ -561,9 +564,10 @@ document.addEventListener("DOMContentLoaded", async function() {
                             : satellite.uniqueness.toFixed(2);
                         return `<li>
                             Score: <b>${uniquenessStr}</b> 
-                            [ID: <span class="satellite-id" data-id="${satellite.id}" onclick="toggleOrbit('${satellite.id}')" style="cursor: pointer; color: blue; text-decoration: underline;">
-                            ${satellite.id}</span>]
-                            Rank: <b>${satellite.rank} / ${satellite.total}</b> 
+                            (<span class="satellite-id" 
+                                data-id="${satellite.id}" 
+                                onclick="toggleOrbit('${satellite.id}')"
+                                style="cursor: pointer; color: blue; text-decoration: underline;">${satellite.id}</span>)
                             ${satellite.name}
                          </li>`;
                     }).join('')}
@@ -590,9 +594,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         // Determine the orbit filter based on the selected radio button.
         let orbitFilters = [];
-        if (document.getElementById('radio-all').checked) {
-            orbitFilters = ["LEO", "MEO", "GEO", "HEO"];
-        }
+        // if (document.getElementById('radio-all').checked) {
+        //     orbitFilters = ["LEO", "MEO", "GEO", "HEO"];
+        // }
         if (document.getElementById('radio-leo').checked) orbitFilters = ["LEO"];
         if (document.getElementById('radio-meo').checked) orbitFilters = ["MEO"];
         if (document.getElementById('radio-geo').checked) orbitFilters = ["GEO"];
@@ -608,7 +612,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 uniqueness: ent.properties.uniqueness?.getValue(now)
             }))
             .filter(sat => sat.uniqueness !== undefined);
-        overallSatellites.sort((a, b) => a.uniqueness - b.uniqueness);
+        overallSatellites.sort((a, b) => a.uniqueness > b.uniqueness);
         const overallTotalSatellites = overallSatellites.length;
         
         let satellitesWithUniqueness = entities
@@ -627,7 +631,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
         
         // Sort satellites based on uniqueness (assumes lower uniqueness means more unique).
-        satellitesWithUniqueness.sort((a, b) => a.uniqueness - b.uniqueness);
+        satellitesWithUniqueness.sort((a, b) => a.uniqueness > b.uniqueness);
         
         // Get top (most unique) and bottom (least unique) 5 satellites from the filtered list.
         const topSatellites = satellitesWithUniqueness.slice(-5).reverse();
@@ -645,7 +649,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             sat.total = overallTotalSatellites;
         });
 
-        let displayOrbitText = document.getElementById('radio-all').checked ? "GLOBAL" : orbitFilters.join(', ');
+        let displayOrbitText = orbitFilters.join(', ');
 
         // Build the info box content using generateSatelliteList.
         let infoboxContent = `<h3>5 Most Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topSatellites);
