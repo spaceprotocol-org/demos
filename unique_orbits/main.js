@@ -290,7 +290,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         const sortedEntities = filteredEntities.slice().sort((a, b) => {
             const rankA = parseFloat(a.properties.rank.getValue(viewer.clock.currentTime));
             const rankB = parseFloat(b.properties.rank.getValue(viewer.clock.currentTime));
-            return rankA < rankB;
+            return rankA > rankB;
         });
 
         // console.log(sortedEntities)
