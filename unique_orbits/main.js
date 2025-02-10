@@ -169,12 +169,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         const pickedObject = viewer.scene.pick(movement.position);
         if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
             const entity = pickedObject.id;
-            // Use showEntityPath instead of toggleOrbit
             showEntityPath(entity);
             highlightedEntities.push(entity);
         } else {
             infoBox.style.display = 'none';
-            removeAllEntityPaths();
+            // Do nothing when clicking on the environment
         }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
@@ -182,9 +181,10 @@ document.addEventListener("DOMContentLoaded", async function() {
     // ensure all entities are not shown
 
     // initialise the model
+    removeEntities();
     document.getElementById('radio-leo').checked = true;
     handleOrbitToggle();
-    removeEntities();
+   
     
     // Define toggleOrbit to show/hide the orbit path.
     function toggleOrbit(entityId) {
@@ -192,50 +192,43 @@ document.addEventListener("DOMContentLoaded", async function() {
             ? dataSource.entities.getById(entityId)
             : null;
         if (!entity) return;
-        
-        // If the entity already has a path, toggle its visibility.
         if (entity.path) {
-            entity.path.show = !entity.path.show;
+            removeEntityPath(entity);
         } else {
-            // Create a sample orbit path.
-            // For demonstration, generate a circular orbit using sampled positions.
-            const cp = new Cesium.SampledPositionProperty();
-            const start = Cesium.JulianDate.now();
-            for (let i = 0; i < 360; i += 10) {
-                let time = Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate());
-                // NOTE: In a real implementation, calculate the orbital position.
-                // Here we use the entity's current position.
-                let pos = entity.position.getValue(Cesium.JulianDate.now());
-                cp.addSample(time, pos);
-            }
-            
-            // Apply the orbit path (this creates a new pathGraphics object).
-            entity.path = new Cesium.PathGraphics({
-                show: true,
-                material: Cesium.Color.YELLOW,
-                width: 2
-            });
-            // Update the entity's position property with the sampled positions.
-            entity.position = cp;
+            showEntityPath(entity);
         }
     }
 
-    function showEntityPath(entity) {
-        // remove entities
-        removeEntities();
-
-        if (!entity.path) {
+    function showEntityPath(entity, status) {
+        if (!entity) return;
+        console.log("showEntityPath called with status:", status);
+    
+        // Determine the orbit color.
+        let color;
+        if (status && status.toLowerCase().includes('top')) {
+            color = Cesium.Color.RED;    // top orbits in red
+        } else if (status && status.toLowerCase().includes('bottom')) {
+            color = Cesium.Color.GREEN;  // bottom orbits in green
+        } else {
+            color = Cesium.Color.WHITE;  // fallback
+        }
+    
+        // Force update or creation of the path with the correct color.
+        if (entity.path) {
+            entity.path.material = new Cesium.ColorMaterialProperty(color);
+            entity.path.width = 2;
+            entity.path.show = true;
+        } else {
             entity.path = new Cesium.PathGraphics({
-                width: 1,
-                material: new Cesium.ColorMaterialProperty(
-                    entity.point ? entity.point.color : Cesium.Color.WHITE
-                )
+                show: true,
+                material: new Cesium.ColorMaterialProperty(color),
+                width: 2
             });
         }
+        
         if (!viewer.entities.contains(entity)) {
             viewer.entities.add(entity);
         }
-    
         entity.show = true;
     }
 
@@ -257,9 +250,11 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function removeEntities() {
-        dataSource.entities.values.forEach(entity => {
-            viewer.entities.remove(entity);
-        });
+        // Clear any manually added orbit paths
+        viewer.entities.removeAll();
+        
+        // Also hide dataSource entities if needed
+        dataSource.entities.values.forEach(entity => entity.show = false);
     }
 
     function getOrbitEntities(selectedOrbit){
@@ -328,7 +323,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             throw new Error('topEntities and bottomEntities must have 5 entities each');
         }
 
-        // // display the top and bottom entity orbits
+        // display the top and bottom entity orbits
         topEntities.forEach(entity => showEntityPath(entity, 'top'));
         bottomEntities.forEach(entity => showEntityPath(entity, 'bottom'));
 
@@ -341,6 +336,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         const radio = document.getElementById(id);
         if (radio) {
             radio.addEventListener('change', function() {
+                console.log("radio change event");
+                removeEntities();
                 handleOrbitToggle();
             });
         }
@@ -400,6 +397,9 @@ document.addEventListener("DOMContentLoaded", async function() {
     });
 
     function toggleOrbit(entityId) {
+        const entity = dataSource && dataSource.entities && typeof dataSource.entities.getById === 'function'
+            ? dataSource.entities.getById(entityId)
+            : null;
         if (!entity) return;
         if (entity.path) {
             removeEntityPath(entity);
@@ -407,6 +407,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             showEntityPath(entity);
         }
     }
+    window.toggleOrbit = toggleOrbit;
     
     function generateSatelliteList(satellites) {
 
@@ -430,14 +431,14 @@ document.addEventListener("DOMContentLoaded", async function() {
     
     // After you update the infobox content, attach event listeners:
     function attachOrbitToggleHandlers() {
-        const ids = document.querySelectorAll('.satellite-id');
-        ids.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const noradId = link.getAttribute('data-id');
-                toggleOrbit(noradId);
-            });
-        });
+        // const ids = document.querySelectorAll('.satellite-id');
+        // ids.forEach(link => {
+        //     link.addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         const noradId = link.getAttribute('data-id');
+        //         toggleOrbit(noradId);
+        //     });
+        // });
     }
 
     // In main.js-1, update displayTopAndBottomSatellitesByUniqueness:
@@ -470,8 +471,11 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     function handleOrbitToggle() {
         // console.log("handleOrbitToggle called");
+        removeEntities();
         showUniqueOrbits();
         displayUniqueOrbitList();
+        //clear entities
+        
     }
 
     openNav();
