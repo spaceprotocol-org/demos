@@ -184,7 +184,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     // initialise the model
     document.getElementById('radio-leo').checked = true;
     handleOrbitToggle();
-    removeAllEntityPaths();
+    removeEntities();
     
     // Define toggleOrbit to show/hide the orbit path.
     function toggleOrbit(entityId) {
@@ -221,6 +221,9 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function showEntityPath(entity) {
+        // remove entities
+        removeEntities();
+
         if (!entity.path) {
             entity.path = new Cesium.PathGraphics({
                 width: 1,
@@ -253,14 +256,20 @@ document.addEventListener("DOMContentLoaded", async function() {
         highlightedEntities = [];
     }
 
+    function removeEntities() {
+        dataSource.entities.values.forEach(entity => {
+            viewer.entities.remove(entity);
+        });
+    }
+
     function getOrbitEntities(selectedOrbit){
         const entities = dataSource.entities.values;
 
-        console.log("getOrbitEntities called with selectedOrbit: ", selectedOrbit);
+        // console.log("getOrbitEntities called with selectedOrbit: ", selectedOrbit);
 
         const orbitEntities = entities.filter(entity => {
             const orbit_class = entity.properties.orbit_class?.getValue();
-            console.log("orbit_class: ", orbit_class);
+            
             return orbit_class === selectedOrbit;
         });
         return orbitEntities;
@@ -278,20 +287,20 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     function getTopBottomEntities(entities){
         // check that entities is an array:
-        if (!Array.isArray(entities) && entities.length === 0) {
-            throw new Error('entities must be an array or is empty');
-        } else {
-            console.log("getTopBottomEntities called, entities is a valid array");
-        }
+        // if (!Array.isArray(entities) && entities.length === 0) {
+        //     throw new Error('entities must be an array or is empty');
+        // } else {
+        //     console.log("getTopBottomEntities called, entities is a valid array");
+        // }
 
-        console.log("number of entities: ", entities.length);
+        // console.log("number of entities: ", entities.length);
         // sort the entities and get the top and bottom 5
         entities.sort((a, b) => a.properties.rank?.getValue() - b.properties.rank?.getValue());
 
         const topEntities = entities.slice(0, 5);
         const bottomEntities = entities.slice(-5);
 
-        // sort the bottom entities in ascending order
+        // Show in ascending order
         bottomEntities.reverse();
 
         if (topEntities.length !== 5 || bottomEntities.length !== 5) {
@@ -314,9 +323,17 @@ document.addEventListener("DOMContentLoaded", async function() {
         // remove all entity paths
         removeAllEntityPaths();
 
-        // display the top and bottom entity orbits
-        topEntities.forEach(entity => showEntityPath(entity));
-        bottomEntities.forEach(entity => showEntityPath(entity));
+        if(topEntities.length === 0 && bottomEntities.length === 0) {
+            //throw error
+            throw new Error('topEntities and bottomEntities must have 5 entities each');
+        }
+
+        // // display the top and bottom entity orbits
+        topEntities.forEach(entity => showEntityPath(entity, 'top'));
+        bottomEntities.forEach(entity => showEntityPath(entity, 'bottom'));
+
+        // topEntities.forEach(entity => toggleOrbit(entity));
+        // bottomEntities.forEach(entity => toggleOrbit(entity));
     }
 
     // if there is a change in any of the orbit filter radios
@@ -433,11 +450,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         const [topEntities, bottomEntities] = getTopBottomEntities(entities);
 
         // check if topEntities and bottomEntities are not empty
-        if (topEntities.length !== 0 || bottomEntities.length !== 0) {
-            console.log("displayUniqueOrbitList called with topEntities: ", topEntities, " and bottomEntities: ", bottomEntities);
-        } else {
-            console.log("displayUniqueOrbitList called with empty topEntities and bottomEntities");
-        }
+        // if (topEntities.length !== 0 || bottomEntities.length !== 0) {
+        //     console.log("displayUniqueOrbitList called with topEntities: ", topEntities, " and bottomEntities: ", bottomEntities);
+        // } else {
+        //     console.log("displayUniqueOrbitList called with empty topEntities and bottomEntities");
+        // }
 
         // Build the info box content using generateSatelliteList.
         let infoboxContent = `<h3>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
@@ -452,7 +469,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function handleOrbitToggle() {
-        console.log("handleOrbitToggle called");
+        // console.log("handleOrbitToggle called");
         showUniqueOrbits();
         displayUniqueOrbitList();
     }
