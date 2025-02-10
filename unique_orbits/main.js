@@ -69,8 +69,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         loadingScreen.style.display = 'none';
         const searchContainer = document.getElementById('searchContainer');
         searchContainer.style.display = 'block';
-        // displayTopAndBottomSatellitesByDIT();
-        displayTopAndBottomSatellitesByUniqueness();
+
 
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -164,7 +163,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         infoBox.innerHTML = '';
     }
 
-
     // Re-enable left-click so that when a satellite is clicked, its orbit is toggled.
     viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
         const pickedObject = viewer.scene.pick(movement.position);
@@ -174,7 +172,6 @@ document.addEventListener("DOMContentLoaded", async function() {
             removeAllEntityPaths();
         }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
 
     viewer.screenSpaceEventHandler.setInputAction(function onMouseMove(movement) {
         const pickedObject = viewer.scene.pick(movement.endPosition);
@@ -265,231 +262,50 @@ document.addEventListener("DOMContentLoaded", async function() {
         highlightedEntities = [];
     }
 
-    function filterByRank10() {
-        //just make sure that the toggleUnique radio is actually checked
-        const istoggleUnique = document.querySelector('input[value="toggleUnique"]').checked;
-
-        // Gather the selected orbit filters
-        let orbitFilters = [];
-        // if (document.getElementById('radio-all').checked) orbitFilters.push("LEO", "MEO", "GEO", "HEO");
-        if (document.getElementById('radio-leo').checked) orbitFilters.push("LEO");
-        if (document.getElementById('radio-meo').checked) orbitFilters.push("MEO");
-        if (document.getElementById('radio-geo').checked) orbitFilters.push("GEO");
-        if (document.getElementById('radio-heo').checked) orbitFilters.push("HEO");
-        
-        // Filter entities based on orbit filters if any are selected, otherwise use all entities.
-        let filteredEntities = dataSource.entities.values;
-        if (orbitFilters.length > 0) {
-            filteredEntities = filteredEntities.filter(entity => {
-                const orbitClass = entity.properties.orbit_class && entity.properties.orbit_class.getValue(viewer.clock.currentTime);
-                return orbitClass && orbitFilters.includes(orbitClass);
-            });
-        }
-                
-        // Sort the filtered entities by rank (assumes lower rank equals higher uniqueness)
-        const sortedEntities = filteredEntities.slice().sort((a, b) => {
-            const rankA = parseFloat(a.properties.rank.getValue(viewer.clock.currentTime));
-            const rankB = parseFloat(b.properties.rank.getValue(viewer.clock.currentTime));
-            return rankA > rankB;
+    function getOrbitEntities(selectedOrbit){
+        const entities = dataSource.entities.values;
+        const orbitEntities = entities.filter(entity => {
+            const orbit_class = entity.properties.orbit_class;
+            return orbit_class === selectedOrbit;
         });
-
-        // console.log(sortedEntities)
-        
-        // Get top 5 and bottom 5 from the sorted list.
-        const topEntities = sortedEntities.slice(0, 5);
-        const bottomEntities = sortedEntities.slice(-5);
-        
-        // Hide all entities first.
-        dataSource.entities.values.forEach(entity => entity.show = false);
-        
-        // Show top satellites if radio is checked.
-        if (istoggleUnique) {
-            topEntities.forEach(entity => entity.show = true);
-            bottomEntities.forEach(entity => entity.show = true);
-            // show their orbits
-            topEntities.forEach(entity => showEntityPath(entity));
-            bottomEntities.forEach(entity => showEntityPath(entity));
-
-            displayTopAndBottomSatellitesByUniqueness();
-        } else {
-            topBottomInfoBox.style.display = 'none';
-            console.log("filterByRank10: toggleUnique radio is not checked");
-        }
-        
+        return orbitEntities;
     }
 
-    function filterOrbitClasses() {
-
-        // const all = document.getElementById('radio-all').checked;
-        const leo = document.getElementById('radio-leo').checked;
-        const meo = document.getElementById('radio-meo').checked;
-        const geo = document.getElementById('radio-geo').checked;
-        const heo = document.getElementById('radio-heo').checked;
-        const all = leo;
-
-        // handle the case where the toggleAll radio is selected
-        const toggleAll = document.querySelector('input[value="toggleAll"]').checked;
-        if (toggleAll) {
-            removeAllEntityPaths();
-            topBottomInfoBox.style.display = 'none';
-            if (all) {
-                dataSource.entities.values.forEach(entity => {
-                    entity.show = true;
-                });
-            } else {
-                dataSource.entities.values.forEach(entity => {
-                    const orbitClass = entity.properties.orbit_class && entity.properties.orbit_class.getValue(viewer.clock.currentTime);
-                    if (orbitClass && (
-                           (leo && orbitClass === "LEO") ||
-                           (meo && orbitClass === "MEO") ||
-                           (geo && orbitClass === "GEO") ||
-                           (heo && orbitClass === "HEO")
-                       )) {
-                        entity.show = true;
-                    } else {
-                        entity.show = false;
-                        console.log("issues filtering the orbits");
-                    }
-                });
-            }
-        } else { // handle the case where the toggleUnique radio is selected
-            console.log('filterOrbitClasses: toggleUnique radio is checked');
-            filterByRank10();
-            
-        }  
+    function getSelectedOrbit(){
+        let orbit = "";
+        if (document.getElementById('radio-leo').checked) orbit = "LEO";
+        if (document.getElementById('radio-meo').checked) orbit = "MEO";
+        if (document.getElementById('radio-geo').checked) orbit = "GEO";
+        if (document.getElementById('radio-heo').checked) orbit = "HEO";
+        return orbit;
     }
+
+    // will return the top and bottom 5 entities based on uniqueness rank for the given orbit
+    function showUniqueOrbits() {
+        // get which orbit radio is selected
+        const selectedOrbit = getSelectedOrbit();
+        // get the entities in the selected orbit
+        const entities = getOrbitEntities(selectedOrbit);
+
+        // sort the entities and get the top and bottom 5
+        entities.sort((a, b) => a.properties.rank() - b.properties.rank());
+        const topEntities = entities.slice(0, 5);
+        const bottomEntities = entities.slice(-5);
         
-    // Attach event listeners to the display change radios
-    document.querySelector('input[value="toggleUnique"]').addEventListener('change', filterByRank10);
-    // if the all radio is selected, show all entities for the given orbit class
-    document.querySelector('input[value="toggleAll"]').addEventListener('change', filterOrbitClasses);
+        // display the top and bottom entity orbits
+        topEntities.forEach(entity => showEntityPath(entity));
+        bottomEntities.forEach(entity => showEntityPath(entity));
+    }
 
     // if there is a change in any of the orbit filter radios
     ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'].forEach(id => {
         const radio = document.getElementById(id);
         if (radio) {
             radio.addEventListener('change', function() {
-                if (document.querySelector('input[value="toggleUnique"]').checked) {
-                    filterByRank10();
-                    displayTopAndBottomSatellitesByUniqueness();
-                } else {
-                    filterOrbitClasses();
-                }
+                handleOrbitToggle();
             });
         }
     });
-
-
-    function updateColors(property, numberOfBins = 5) {
-        let minValue = Infinity;
-        let maxValue = -Infinity;
-        let hasValues = false;
-    
-        dataSource.entities.values.forEach(entity => {
-            const value = entity.properties[property]?.getValue(Cesium.JulianDate.now());
-            if (value !== undefined) {
-                hasValues = true;
-                minValue = Math.min(minValue, value);
-                maxValue = Math.max(maxValue, value);
-            }
-        });
-    
-        if (!hasValues) {
-            removeLegend();
-            return;
-        }
-    
-        const binSize = (maxValue - minValue) / numberOfBins;
-        const bins = [];
-        for (let i = 0; i < numberOfBins; i++) {
-            let color;
-            // Change only the colors for each bin for better contrast against a black background
-            switch (i) {
-                case 0:
-                    // For uniqueness range 0.00 - 0.20: Green
-                    color = Cesium.Color.fromCssColorString("#00FF00");
-                    break;
-                case 1:
-                    // For uniqueness range 0.20 - 0.40: Yellow
-                    color = Cesium.Color.fromCssColorString("#FFFF00");
-                    break;
-                case 2:
-                    // Mid range: Bright Orange
-                    color = Cesium.Color.fromCssColorString("#FF8C00");
-                    break;
-                case 3:
-                    // Next range: Pink
-                    color = Cesium.Color.fromCssColorString("#FF69B4");
-                    break;
-                case 4:
-                    // Highest range: Bright Red
-                    color = Cesium.Color.fromCssColorString("#FF0000");
-                    break;
-                default:
-                    color = Cesium.Color.WHITE;
-            }
-            bins.push({
-                min: minValue + i * binSize,
-                max: minValue + (i + 1) * binSize,
-                color: color
-            });
-        }
-    
-        // getColor uses the bins to map value to color
-        function getColor(value) {
-            for (let bin of bins) {
-                if (value >= bin.min && value <= bin.max) {
-                    return bin.color;
-                }
-            }
-            return Cesium.Color.WHITE;
-        }
-    
-        dataSource.entities.values.forEach(entity => {
-            const value = entity.properties[property]?.getValue(Cesium.JulianDate.now());
-            if (value !== undefined && entity.point) {
-                const color = getColor(value);
-                entity.point.color = color;
-            }
-        });
-    
-        generateLegend(bins);
-    }
-
-    function generateLegend(bins) {
-        removeLegend();
-        const legendContainer = document.getElementById('legendContainer');
-
-        bins.forEach(bin => {
-            const legendItem = document.createElement('div');
-            legendItem.style.display = 'flex';
-            legendItem.style.alignItems = 'center';
-
-            const colorBox = document.createElement('div');
-            colorBox.style.width = '20px';
-            colorBox.style.height = '20px';
-            colorBox.style.backgroundColor = bin.color.toCssColorString();
-            colorBox.style.border = '1px solid #000';
-            colorBox.style.marginRight = '10px';
-
-            const label = document.createElement('span');
-            label.textContent = `${bin.min.toFixed(2)} - ${bin.max.toFixed(2)}`;
-
-            legendItem.appendChild(colorBox);
-            legendItem.appendChild(label);
-
-            legendContainer.appendChild(legendItem);
-        });
-    }
-
-    function removeLegend() {
-        const legendContainer = document.getElementById('legendContainer');
-        while (legendContainer.firstChild) {
-            legendContainer.removeChild(legendContainer.firstChild);
-        }
-    }
-
-    updateColors('uniqueness', 5);
 
     const searchButton = document.getElementById('searchButton');
     const searchInput = document.getElementById('searchInput');
@@ -544,10 +360,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         infoBox.style.display = 'none';
     });
 
-
-
     function toggleOrbit(entityId) {
-        const entity = dataSource.entities.getById(entityId);
         if (!entity) return;
         if (entity.path) {
             removeEntityPath(entity);
@@ -587,101 +400,26 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     // In main.js-1, update displayTopAndBottomSatellitesByUniqueness:
-    async function displayTopAndBottomSatellitesByUniqueness() {
-        console.log('displayTopAndBottomSatellitesByUniqueness called');
-
-        const istoggleUnique = document.querySelector('input[value="toggleUnique"]').checked;
-
-        // Determine the orbit filter based on the selected radio button.
-        let orbitFilters = [];
-        // if (document.getElementById('radio-all').checked) {
-        //     orbitFilters = ["LEO", "MEO", "GEO", "HEO"];
-        // }
-        if (document.getElementById('radio-leo').checked) orbitFilters = ["LEO"];
-        if (document.getElementById('radio-meo').checked) orbitFilters = ["MEO"];
-        if (document.getElementById('radio-geo').checked) orbitFilters = ["GEO"];
-        if (document.getElementById('radio-heo').checked) orbitFilters = ["HEO"];
-
-        const now = Cesium.JulianDate.now();
-        const entities = dataSource.entities.values;
+    async function displayUniqueOrbitList() {
         
-        // Compute overall ranking info for all satellites with uniqueness.
-        let overallSatellites = entities
-            .map(ent => ({
-                id: ent.id,
-                uniqueness: ent.properties.uniqueness?.getValue(now)
-            }))
-            .filter(sat => sat.uniqueness !== undefined);
-        overallSatellites.sort((a, b) => a.uniqueness > b.uniqueness);
-        const overallTotalSatellites = overallSatellites.length;
-        
-        let satellitesWithUniqueness = entities
-            .map(entity => ({
-                id: entity.id,
-                name: entity.name,
-                uniqueness: entity.properties.uniqueness?.getValue(now),
-                orbitClass: entity.properties.orbit_class?.getValue(now)
-            }))
-            // Only include satellites that have both a uniqueness and an orbit class.
-            .filter(sat => sat.uniqueness !== undefined && sat.orbitClass !== undefined);
-        
-        // Keep only satellites matching the selected orbit filter.
-        if (orbitFilters.length > 0) {
-            satellitesWithUniqueness = satellitesWithUniqueness.filter(sat => orbitFilters.includes(sat.orbitClass));
-        }
-        
-        // Sort satellites based on uniqueness (assumes lower uniqueness means more unique).
-        satellitesWithUniqueness.sort((a, b) => a.uniqueness > b.uniqueness);
-        
-        // Get top (most unique) and bottom (least unique) 5 satellites from the filtered list.
-        const topSatellites = satellitesWithUniqueness.slice(-5).reverse();
-        const bottomSatellites = satellitesWithUniqueness.slice(0, 5);
-        
-        // Use overall ranking for each satellite.
-        topSatellites.forEach(sat => {
-            const overallIndex = overallSatellites.findIndex(osat => osat.id === sat.id);
-            sat.rank = overallIndex + 1;
-            sat.total = overallTotalSatellites;
-        });
-        bottomSatellites.forEach(sat => {
-            const overallIndex = overallSatellites.findIndex(osat => osat.id === sat.id);
-            sat.rank = overallIndex + 1;
-            sat.total = overallTotalSatellites;
-        });
-
         let displayOrbitText = orbitFilters.join(', ');
 
         // Build the info box content using generateSatelliteList.
-        let infoboxContent = `<h3>5 Most Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topSatellites);
-        infoboxContent += `<h3>5 Least Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(bottomSatellites);
+        let infoboxContent = `<h3>5 Most Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topEntities);
+        infoboxContent += `<h3>5 Least Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(bottomEntities);
 
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
         attachOrbitToggleHandlers();
 
         // Display the container if toggleUnique is selected.
-        topBottomInfoBox.style.display = istoggleUnique ? 'block' : 'none';
-
-        if (istoggleUnique) {
-            orbitsOn = true;
-            removeAllEntityPaths();
-            dataSource.entities.values.forEach(entity => {
-                if (entity.show) {
-                    showEntityPath(entity);
-                }
-            });
-        }
+        topBottomInfoBox.style.display = 'block';
     }
 
-
-
-    const rankingsToggle = document.getElementById('rankingsToggle');
-    rankingsToggle.addEventListener('click', () => {
-        const topBottomInfoBox = document.getElementById('topBottomInfoBox');
-        if (topBottomInfoBox) {
-            topBottomInfoBox.style.display = topBottomInfoBox.style.display === 'none' ? 'block' : 'none';
-        }
-    });
+    function handleOrbitToggle() {
+        showUniqueOrbits();
+        displayUniqueOrbitList();
+    }
 
     openNav();
 });
