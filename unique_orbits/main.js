@@ -4,10 +4,6 @@ document.addEventListener("DOMContentLoaded", async function() {
     
     const oauth2Token = Cesium.Ion.defaultAccessToken;
     const baseUrl = 'https://api.cesium.com/v1/assets';
-    
-    document.getElementById('radio-leo').checked = true;
-    document.querySelector('input[value="toggleAll"]').checked = true;
-
 
     async function fetchLatestAsset() {
         const params = new URLSearchParams({
@@ -78,6 +74,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             performSearch(idFromURL);
         }
 
+        dataSource.entities.values.forEach(entity => entity.show = false);
+
     } catch (error) {
         console.log(error);
     }
@@ -98,24 +96,9 @@ document.addEventListener("DOMContentLoaded", async function() {
         const offset = 10;
     
         // -----
-    
-        // Getting the rank of the given satellite on hover
-        let satellites = dataSource.entities.values
-            .map(ent => ({
-                id: ent.id,
-                uniqueness: ent.properties.uniqueness?.getValue(now)
-            }))
-            .filter(sat => sat.uniqueness !== undefined);
-        
-        satellites.sort((a, b) => a.uniqueness - b.uniqueness);
-        
-        const totalSatellites = satellites.length;
-        const rankIndex = satellites.findIndex(sat => sat.id === entity.id);
-        const rankText = rankIndex !== -1 ? `Rank: ${rankIndex + 1} / ${totalSatellites}` : '';
-        
-    
+            
         if (entity) {
-            const uniqueness = entity.properties?.uniqueness?.getValue(now);
+            const uniqueness = entity.properties.uniqueness?.getValue(now);
             const uniquenessStr = (typeof uniqueness === 'number')
                 ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
                 : "N/A";
@@ -195,6 +178,14 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+
+    // ensure all entities are not shown
+
+    // initialise the model
+    document.getElementById('radio-leo').checked = true;
+    handleOrbitToggle();
+    removeAllEntityPaths();
+    
     // Define toggleOrbit to show/hide the orbit path.
     function toggleOrbit(entityId) {
         const entity = dataSource && dataSource.entities && dataSource.entities.getById 
@@ -264,8 +255,12 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     function getOrbitEntities(selectedOrbit){
         const entities = dataSource.entities.values;
+
+        console.log("getOrbitEntities called with selectedOrbit: ", selectedOrbit);
+
         const orbitEntities = entities.filter(entity => {
-            const orbit_class = entity.properties.orbit_class;
+            const orbit_class = entity.properties.orbit_class?.getValue();
+            console.log("orbit_class: ", orbit_class);
             return orbit_class === selectedOrbit;
         });
         return orbitEntities;
@@ -277,21 +272,48 @@ document.addEventListener("DOMContentLoaded", async function() {
         if (document.getElementById('radio-meo').checked) orbit = "MEO";
         if (document.getElementById('radio-geo').checked) orbit = "GEO";
         if (document.getElementById('radio-heo').checked) orbit = "HEO";
+        console.log("getSelectedOrbit called: ", orbit);
         return orbit;
+    }
+
+    function getTopBottomEntities(entities){
+        // check that entities is an array:
+        if (!Array.isArray(entities) && entities.length === 0) {
+            throw new Error('entities must be an array or is empty');
+        } else {
+            console.log("getTopBottomEntities called, entities is a valid array");
+        }
+
+        console.log("number of entities: ", entities.length);
+        // sort the entities and get the top and bottom 5
+        entities.sort((a, b) => a.properties.rank?.getValue() - b.properties.rank?.getValue());
+
+        const topEntities = entities.slice(0, 5);
+        const bottomEntities = entities.slice(-5);
+
+        // sort the bottom entities in ascending order
+        bottomEntities.reverse();
+
+        if (topEntities.length !== 5 || bottomEntities.length !== 5) {
+            throw new Error('topEntities and bottomEntities must have 5 entities each');
+        }
+
+        return [topEntities, bottomEntities];
     }
 
     // will return the top and bottom 5 entities based on uniqueness rank for the given orbit
     function showUniqueOrbits() {
+        
         // get which orbit radio is selected
         const selectedOrbit = getSelectedOrbit();
         // get the entities in the selected orbit
         const entities = getOrbitEntities(selectedOrbit);
 
-        // sort the entities and get the top and bottom 5
-        entities.sort((a, b) => a.properties.rank() - b.properties.rank());
-        const topEntities = entities.slice(0, 5);
-        const bottomEntities = entities.slice(-5);
+        const [topEntities, bottomEntities] = getTopBottomEntities(entities);
         
+        // remove all entity paths
+        removeAllEntityPaths();
+
         // display the top and bottom entity orbits
         topEntities.forEach(entity => showEntityPath(entity));
         bottomEntities.forEach(entity => showEntityPath(entity));
@@ -370,11 +392,13 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
     
     function generateSatelliteList(satellites) {
+
+
         return `<ul style="padding-left: 20px; list-style-type: none;">
                     ${satellites.map(satellite => {
-                        const uniquenessStr = satellite.uniqueness < 0.01 
-                            ? satellite.uniqueness.toExponential(2) 
-                            : satellite.uniqueness.toFixed(2);
+                        const uniquenessStr = satellite.properties.uniqueness?.getValue() < 0.01 
+                            ? satellite.properties.uniqueness?.getValue().toExponential(2) 
+                            : satellite.properties.uniqueness?.getValue().toFixed(2);
                         return `<li>
                             Score: <b>${uniquenessStr}</b> 
                             (<span class="satellite-id" 
@@ -402,11 +426,22 @@ document.addEventListener("DOMContentLoaded", async function() {
     // In main.js-1, update displayTopAndBottomSatellitesByUniqueness:
     async function displayUniqueOrbitList() {
         
-        let displayOrbitText = orbitFilters.join(', ');
+        const selectedOrbit = getSelectedOrbit();
+
+        // get the top and bottom 5 entities
+        const entities = getOrbitEntities(selectedOrbit);
+        const [topEntities, bottomEntities] = getTopBottomEntities(entities);
+
+        // check if topEntities and bottomEntities are not empty
+        if (topEntities.length !== 0 || bottomEntities.length !== 0) {
+            console.log("displayUniqueOrbitList called with topEntities: ", topEntities, " and bottomEntities: ", bottomEntities);
+        } else {
+            console.log("displayUniqueOrbitList called with empty topEntities and bottomEntities");
+        }
 
         // Build the info box content using generateSatelliteList.
-        let infoboxContent = `<h3>5 Most Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(topEntities);
-        infoboxContent += `<h3>5 Least Unique Orbits (${displayOrbitText})</h3>` + generateSatelliteList(bottomEntities);
+        let infoboxContent = `<h3>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
+        infoboxContent += `<h3>5 Least Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(bottomEntities);
 
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
@@ -417,6 +452,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function handleOrbitToggle() {
+        console.log("handleOrbitToggle called");
         showUniqueOrbits();
         displayUniqueOrbitList();
     }

@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    
     <div id="loadingScreen">
         <img src="loading.gif" alt="Loading">
     </div>
@@ -28,24 +29,10 @@
     <div id="sideNav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <div id="controls">
-            <div id="displayOptions">
-                <h3 style="color:#fff; font-size:14px; margin-top:15px;">Display Options</h3>
-                <label>
-                    <input type="radio" name="displayOptions" id="property" value="toggleAll">
-                    <span>All</span>
-                </label>
-                <label>
-                    <input type="radio" name="displayOptions" id="property" value="toggleUnique">
-                    <span>Unique</span>
-                </label>
-            </div>
             <!-- Added orbit classification filters -->
             <div id="orbitFilters">
                 <h3 style="color:#fff; font-size:14px; margin-top:15px;">Orbital Regime</h3>
-                <!-- <label>
-                    <input type="radio" name="orbitFilters" id="radio-all" value="all">
-                    <span>GLOBAL</span>
-                </label> -->
+
                 <label>
                     <input type="radio" name="orbitFilters" id="radio-leo" value="LEO">
                     <span>LEO</span>
@@ -75,13 +62,11 @@
     <script>
         function openNav() {
             document.getElementById("sideNav").style.width = "250px";
-            document.getElementById("main").style.marginLeft = "250px";
             document.getElementById("openNavBtn").style.display = 'none';
         }
 
         function closeNav() {
             document.getElementById("sideNav").style.width = "0";
-            document.getElementById("main").style.marginLeft= "0";
             document.getElementById("openNavBtn").style.display = 'block';
         }
     </script>
