@@ -450,16 +450,9 @@ document.addEventListener("DOMContentLoaded", async function() {
         const entities = getOrbitEntities(selectedOrbit);
         const [topEntities, bottomEntities] = getTopBottomEntities(entities);
 
-        // check if topEntities and bottomEntities are not empty
-        // if (topEntities.length !== 0 || bottomEntities.length !== 0) {
-        //     console.log("displayUniqueOrbitList called with topEntities: ", topEntities, " and bottomEntities: ", bottomEntities);
-        // } else {
-        //     console.log("displayUniqueOrbitList called with empty topEntities and bottomEntities");
-        // }
-
         // Build the info box content using generateSatelliteList.
-        let infoboxContent = `<h3>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
-        infoboxContent += `<h3>5 Least Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(bottomEntities);
+        let infoboxContent = `<h3><span class="box green"></span>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
+        infoboxContent += `<h3><span class="box red"></span>5 Least Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(bottomEntities);
 
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;

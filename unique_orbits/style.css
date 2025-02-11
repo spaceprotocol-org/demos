@@ -286,3 +286,22 @@ button:hover {
 button:active {
     transform: scale(0.98);
 }
+
+.box {
+    display: inline-block;
+    vertical-align: middle;
+    height: 15px;
+    width: 15px;
+    margin-right: 8px;
+    border: 1px solid black;
+    border-radius: 3px;
+}
+
+.red {
+    background-color: red;
+}
+  
+.green {
+    background-color: green;
+}
+  

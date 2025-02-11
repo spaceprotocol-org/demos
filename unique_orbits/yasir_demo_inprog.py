@@ -62,23 +62,10 @@ def get_posvcs(TLE_LINE1, TLE_LINE2, only_one_period = True):
     
     return positions, coord_list
 
-
 def build_czml(df):
-    # Label satellites based on their uniqueness ranking per orbit regime
-    for regime in df['prop_orbit_class'].unique():
-        group = df[df['prop_orbit_class'] == regime].sort_values(by='prop_rank')
-        if len(group) >= 10:
-            most_ids = group.head(5).index
-            least_ids = group.tail(5).index
-            df.loc[most_ids, 'prop_uniqueness_range'] = 'most'
-            df.loc[least_ids, 'prop_uniqueness_range'] = 'least'
-        else:
-            print(f"Warning: Not enough satellites in {regime} to determine most and least unique")
-            # Optionally assign a default label for the whole group in this regime
-            df.loc[group.index, 'prop_uniqueness_range'] = 'unknown'
     
     epochTime = dt.datetime.now(dt.timezone.utc)
-    endTime = epochTime + dt.timedelta(days=1)
+    endTime = epochTime + dt.timedelta(days = 1)
     epochStr, endTimeStr = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S.%fZ'), [epochTime, endTime])
 
     czml = [{'id': 'document', 'version': '1.0'}]
@@ -88,25 +75,27 @@ def build_czml(df):
     for _, row in df.iterrows():
         _, coordinates = get_posvcs(row['TLE_LINE1'], row['TLE_LINE2'])
         coords = [int(coord) if i % 4 == 0 else float(coord) 
-                  for i, coord in enumerate(coordinates)]
+        for i, coord in enumerate(coordinates)]
 
         czml.append({
             'id': row['NORAD_CAT_ID'],
             'name': row['OBJECT_NAME'],
             'availability': f"{epochStr}/{endTimeStr}",
             'position': {
-                'epoch': epochStr,
-                'cartographicDegrees': coords,
+                'epoch': epochStr, 
+                'cartographicDegrees': coords, 
                 'interpolationDegree': 5,
-                'interpolationAlgorithm': 'LAGRANGE'
-            },
+                'interpolationAlgorithm': 'LAGRANGE'},
             'properties': {key[5:]: row[key] for key in property_keys},
-            'point': {'color': {'rgba': [255, 255, 0, 255]},
+            'point': {'color': {'rgba': [255, 255, 0, 255]}, 
                       'pixelSize': 2}
         })
 
     with open('output.czml', 'w') as file:
-        json.dump(czml, file, indent=2, separators=(',', ': '))
+        json.dump(czml, file, 
+                  indent = 2, 
+                  separators = (',', ': '))
+
 
 
 def get_orbital_regimes() -> pd.DataFrame:
@@ -169,7 +158,7 @@ def get_satellites_info(run_from_scratch=False):
         elif NORAD_ID in GEO.Satcat.values:
             orbital_regime = "GEO"
         
-        uniqueness_score = -1.0
+        uniqueness_score = -1.0 
         tles.append([NORAD_ID, 
                      name, 
                      tle_line1, 
@@ -265,8 +254,3 @@ if __name__ == '__main__':
     df = pd.read_pickle("data/satellites_with_scores.pkl")
     build_czml(df)
     ionop_czml()
-    
-    
-    
-
-
