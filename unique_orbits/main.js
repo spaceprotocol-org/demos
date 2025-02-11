@@ -201,19 +201,24 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     function showEntityPath(entity, status) {
         if (!entity) return;
-        console.log("showEntityPath called with status:", status);
-    
-        // Determine the orbit color.
-        let color;
-        if (status && status.toLowerCase().includes('top')) {
-            color = Cesium.Color.RED;    // top orbits in red
-        } else if (status && status.toLowerCase().includes('bottom')) {
-            color = Cesium.Color.GREEN;  // bottom orbits in green
-        } else {
-            color = Cesium.Color.WHITE;  // fallback
+        
+        if (!status && entity.properties.uniqueness_range) {
+            status = entity.properties.uniqueness_range.getValue();
         }
-    
-        // Force update or creation of the path with the correct color.
+        
+        console.log("showEntityPath called with status:", status);
+        
+        let color = Cesium.Color.WHITE;
+        if (status) {
+            const lcStatus = status.toLowerCase();
+            if (lcStatus.includes('most') || lcStatus.includes('top')) {
+                color = Cesium.Color.RED;    // top or most unique orbits in red
+            } else if (lcStatus.includes('least') || lcStatus.includes('bottom')) {
+                color = Cesium.Color.GREEN;  // bottom or least unique orbits in green
+            }
+        }
+        
+        // Create or update the entity path with the correct color.
         if (entity.path) {
             entity.path.material = new Cesium.ColorMaterialProperty(color);
             entity.path.width = 2;
@@ -410,35 +415,34 @@ document.addEventListener("DOMContentLoaded", async function() {
     window.toggleOrbit = toggleOrbit;
     
     function generateSatelliteList(satellites) {
-
-
         return `<ul style="padding-left: 20px; list-style-type: none;">
-                    ${satellites.map(satellite => {
-                        const uniquenessStr = satellite.properties.uniqueness?.getValue() < 0.01 
-                            ? satellite.properties.uniqueness?.getValue().toExponential(2) 
-                            : satellite.properties.uniqueness?.getValue().toFixed(2);
-                        return `<li>
-                            Score: <b>${uniquenessStr}</b> 
-                            (<span class="satellite-id" 
-                                data-id="${satellite.id}" 
-                                onclick="toggleOrbit('${satellite.id}')"
-                                style="cursor: pointer; color: blue; text-decoration: underline;">${satellite.id}</span>)
-                            ${satellite.name}
-                         </li>`;
-                    }).join('')}
-                </ul>`;
+            ${satellites.map(satellite => {
+                const uniqueness = satellite.properties.uniqueness?.getValue();
+                const uniquenessStr = typeof uniqueness === 'number'
+                    ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
+                    : "N/A";
+                return `<li>
+                    Score: <b>${uniquenessStr}</b> 
+                    (<span class="satellite-id" 
+                        data-id="${satellite.id}" 
+                        style="cursor: pointer; color: blue; text-decoration: underline;">${satellite.id}</span>)
+                    ${satellite.name}
+                </li>`;
+            }).join('')}
+        </ul>`;
     }
     
     // After you update the infobox content, attach event listeners:
     function attachOrbitToggleHandlers() {
-        // const ids = document.querySelectorAll('.satellite-id');
-        // ids.forEach(link => {
-        //     link.addEventListener('click', (e) => {
-        //         e.preventDefault();
-        //         const noradId = link.getAttribute('data-id');
-        //         toggleOrbit(noradId);
-        //     });
-        // });
+    
+        const ids = document.querySelectorAll('.satellite-id');
+        ids.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const noradId = link.getAttribute('data-id');
+                toggleOrbit(noradId);
+            });
+        });
     }
 
     // In main.js-1, update displayTopAndBottomSatellitesByUniqueness:
@@ -451,8 +455,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         const [topEntities, bottomEntities] = getTopBottomEntities(entities);
 
         // Build the info box content using generateSatelliteList.
-        let infoboxContent = `<h3><span class="box green"></span>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
-        infoboxContent += `<h3><span class="box red"></span>5 Least Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(bottomEntities);
+        let infoboxContent = `<h3><span class="box red"></span>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
+        infoboxContent += `<h3><span class="box green"></span>5 Least Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(bottomEntities);
 
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
