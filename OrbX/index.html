@@ -27,41 +27,32 @@
     <div id="cesiumContainer"></div>
     <div id="infoBox" style="display: none;"></div>
     <div id="sideNav" class="sidenav">
-        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <!-- <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a> -->
         <div id="controls">
             <div id="orbitFilters">
+                <h3 style="color:#fff; font-size:14px; margin-top:15px;">Orbital Regime</h3>
                 <label>
                     <input type="radio" name="orbitFilters" id="radio-leo" value="LEO">
-                    <span>LEO</span>
+                    <span>Low Earth Orbit (LEO)</span>
                 </label>
                 <label>
                     <input type="radio" name="orbitFilters" id="radio-meo" value="MEO">
-                    <span>MEO</span>
+                    <span>Medium Earth Orbit  (MEO)</span>
                 </label>
                 <label>
                     <input type="radio" name="orbitFilters" id="radio-geo" value="GEO">
-                    <span>GEO</span>
+                    <span>Geostationary Earth Orbit (GEO)</span>
                 </label>
                 <label>
                     <input type="radio" name="orbitFilters" id="radio-heo" value="HEO">
-                    <span>HEO</span>
+                    <span>High Earth Orbit (HEO)</span>
                 </label>
             </div>
         </div>
     </div>
-    <button id="openNavBtn" onclick="openNav()">☰</button>
+    <!-- <button id="openNavBtn" onclick="openNav()">☰</button> -->
     <div id="topBottomInfoBox"></div>
     <script src="main.js"></script>
-    <script>
-        function openNav() {
-            document.getElementById("sideNav").style.width = "250px";
-            document.getElementById("openNavBtn").style.display = 'none';
-        }
 
-        function closeNav() {
-            document.getElementById("sideNav").style.width = "0";
-            document.getElementById("openNavBtn").style.display = 'block';
-        }
-    </script>
 </body>
 </html>
