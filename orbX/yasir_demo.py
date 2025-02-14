@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from datetime import datetime
-from query_spacetrack import query_spacetrack
+from query_spacetrack import query_udl
 from sgp4.api import Satrec
 
 import json
@@ -13,7 +13,7 @@ def getPos(dSeconds, satrec, julianDate):
     
     fraction = dSeconds / 86400
     
-    days= 0
+    days = 0
     if fraction > 1:
         days = int(fraction)
         fraction -= days
@@ -65,7 +65,7 @@ def get_posvcs(TLE_LINE1, TLE_LINE2, only_one_period = True):
 def build_czml(df):
     
     epochTime = dt.datetime.now(dt.timezone.utc)
-    endTime = epochTime + dt.timedelta(days = 1)
+    endTime = epochTime + dt.timedelta(days = 10)
     epochStr, endTimeStr = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S.%fZ'), [epochTime, endTime])
 
     czml = [{'id': 'document', 'version': '1.0'}]
@@ -75,8 +75,11 @@ def build_czml(df):
     for _, row in df.iterrows():
         _, coordinates = get_posvcs(row['TLE_LINE1'], row['TLE_LINE2'])
         coords = [int(coord) if i % 4 == 0 else float(coord) 
-        for i, coord in enumerate(coordinates)]
+                  for i, coord in enumerate(coordinates)]
 
+        # Include uniqueness_range explicitly.
+        additional_properties = {'uniqueness_range': row.get('uniqueness_range', 'none')}
+        
         czml.append({
             'id': row['NORAD_CAT_ID'],
             'name': row['OBJECT_NAME'],
@@ -85,10 +88,13 @@ def build_czml(df):
                 'epoch': epochStr, 
                 'cartographicDegrees': coords, 
                 'interpolationDegree': 5,
-                'interpolationAlgorithm': 'LAGRANGE'},
-            'properties': {key[5:]: row[key] for key in property_keys},
-            'point': {'color': {'rgba': [255, 255, 0, 255]}, 
-                      'pixelSize': 2}
+                'interpolationAlgorithm': 'LAGRANGE'
+            },
+            'properties': {**{key[5:]: row[key] for key in property_keys}, **additional_properties},
+            'point': {
+                'color': {'rgba': [255, 255, 0, 255]}, 
+                'pixelSize': 2
+            }
         })
 
     with open('output.czml', 'w') as file:
@@ -124,13 +130,16 @@ def get_orbital_regimes() -> pd.DataFrame:
 
 def get_satellites_info(run_from_scratch=False):
     
+    # let this refresh the elsets every time it gets called
+    
     print('Getting orbital regimes')
     LEO, MEO, HEO, GEO = get_orbital_regimes()
     print("Done")
-    
+        
     if run_from_scratch:
-        os.remove("data/elset_current.text")
-        query_spacetrack()
+        if os.path.exists("data/elset_current.text"):
+            os.remove("data/elset_current.text")
+        query_udl()
 
     if not os.path.exists("data/elset_current.text"):
         print("File not found data/elset_current.text, QUITTING")
@@ -174,7 +183,9 @@ def get_satellites_info(run_from_scratch=False):
                                          "prop_orbit_class",
                                          "prop_uniqueness",
                                          "prop_rank"])
-        
+    
+    # remove any 'TO BE ASSIGNED' satellites
+    tle_df = tle_df[~tle_df['OBJECT_NAME'].astype(str).str.contains('TBA - TO BE ASSIGNED')]
     return tle_df
 
 from DMT import VectorizedKeplerianOrbit
@@ -183,17 +194,18 @@ import pickle
 
 '''
 "properties": {
-      "uniqueness": 0.07179641103799758,
-      "rank": 2279.0,
-      "orbit_class": "LEO"
-    },
+    "uniqueness": 0.07179641103799758,
+    "rank": 2279.0,
+    "orbit_class": "LEO"
+},
 
 '''
 
-def main(from_strach = False):    
+def main(from_strach=True):    
     sats_df = get_satellites_info(from_strach)
-    orbital_regimes = ["GEO","MEO","HEO","LEO"]
-
+    # orbital_regimes = ["GEO", "MEO", "HEO", "LEO"]
+    orbital_regimes = ["LEO", "MEO", "HEO", "GEO", "GTO", "DSO", "CLO", "EEO", "HCO", "PCO", "SSE"]
+    
     results = pd.DataFrame()
 
     for regime in orbital_regimes:
@@ -201,51 +213,50 @@ def main(from_strach = False):
         
         current_regime = sats_df[sats_df.prop_orbit_class==regime].copy()
         
+        if len(current_regime) == 0:
+            continue
+        
         lines1 = current_regime.TLE_LINE1.values
         lines2 = current_regime.TLE_LINE2.values
         
         orbits = VectorizedKeplerianOrbit(lines1, lines2)
         distances = VectorizedKeplerianOrbit.DistanceMetric(orbits, orbits)
         distances = np.array(distances)
-        scores = np.mean(distances, axis=1)
+        
+        def k_nearest_mean(dist_row):
+            k = 100
+            sorted_row = np.sort(dist_row)
+            # Exclude the first element (self-distance, assumed 0) and take the next k distances
+            return np.mean(sorted_row[1:k+1])
+        
+        scores = np.apply_along_axis(k_nearest_mean, 1, distances)
         
         mean_scores = np.mean(scores)
         var_scores = np.var(scores)
         
-        valid_idx = np.square(scores - mean_scores)/var_scores < 2.71
-        
+        valid_idx = np.square(scores - mean_scores) / var_scores < 2.71
         scores = scores[valid_idx]
-        
         current_regime = current_regime[valid_idx]
         
-        current_regime['prop_uniqueness'] = (scores -np.min(scores))/(np.max(scores) - np.min(scores))
-        current_regime['prop_rank'] = current_regime['prop_uniqueness'].rank(ascending = False).astype(int)
+        current_regime['prop_uniqueness'] = (scores - np.min(scores)) / (np.max(scores) - np.min(scores))
+        current_regime['prop_rank'] = current_regime['prop_uniqueness'].rank(ascending=False).astype(int)
         
-        # sats_df.iloc[sats_df.prop_orbit_class==regime,5] = (scores -np.min(scores))/(np.max(scores) - np.min(scores))
+        # Set default uniqueness_range to "none"
+        current_regime["uniqueness_range"] = "none"
+        # Sort by prop_rank so that the highest uniqueness (lowest rank number) come first
+        current_regime.sort_values("prop_rank", inplace=True)
+        # Get the indices for the top 5 and bottom 5
+        top_five_indices = current_regime.head(5).index
+        bottom_five_indices = current_regime.tail(5).index
+        # Set uniqueness_range for top 5 as "most" and bottom 5 as "least"
+        current_regime.loc[top_five_indices, "uniqueness_range"] = "most"
+        current_regime.loc[bottom_five_indices, "uniqueness_range"] = "least"
         
-        # ranking = sats_df[sats_df.prop_orbit_class==regime[valid_idx]]['prop_uniqueness'].rank(ascending = False).astype(int)
-        
-        # sats_df.iloc[sats_df.prop_orbit_class[valid_idx]==regime,6] =  ranking
-        
-        
-        if regime=="LEO":
-            current_regime.sort_values(by='prop_rank', inplace=True)
-            top = current_regime.head(100).copy()
-            bottom = current_regime.tail(100).copy()
-            
-            print(top)
-            print(bottom)
-            
-            results = pd.concat([results, top])
-            results = pd.concat([results, bottom])
-            
-            print(results)
-        else:    
-            results = pd.concat([results, current_regime])
+        results = pd.concat([results, current_regime])
         
         print(f"Mean distances score for {regime}: {np.mean(scores)}")
         print(f"Variation in distances score for {regime}: {np.var(scores)}")
-    
+
     results.to_pickle("data/satellites_with_scores.pkl")
     
 from ionop_czml import ionop_czml       
@@ -254,8 +265,3 @@ if __name__ == '__main__':
     df = pd.read_pickle("data/satellites_with_scores.pkl")
     build_czml(df)
     ionop_czml()
-    
-    
-    
-
-

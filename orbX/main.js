@@ -38,6 +38,10 @@ document.addEventListener("DOMContentLoaded", async function() {
     viewer.scene.globe.enableLighting = true;
     viewer.scene.sun = new Cesium.Sun();
     viewer.scene.moon = new Cesium.Moon();
+    const topBottomInfoBox = document.getElementById('topBottomInfoBox');
+
+    // on load or refresh, clear the search bar
+    document.getElementById('searchInput').value = '';
 
     let dataSource;
     let highlightedEntities = [];
@@ -65,8 +69,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         loadingScreen.style.display = 'none';
         const searchContainer = document.getElementById('searchContainer');
         searchContainer.style.display = 'block';
-
-
 
         const urlParams = new URLSearchParams(window.location.search);
         const idFromURL = urlParams.get('id');
@@ -165,17 +167,17 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-    viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
-        const pickedObject = viewer.scene.pick(movement.position);
-        if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
-            const entity = pickedObject.id;
-            showEntityPath(entity);
-            highlightedEntities.push(entity);
-        } else {
-            infoBox.style.display = 'none';
-            // Do nothing when clicking on the environment
-        }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    // viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+    //     const pickedObject = viewer.scene.pick(movement.position);
+    //     if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+    //         const entity = pickedObject.id;
+    //         showEntityPath(entity);
+    //         highlightedEntities.push(entity);
+    //     } else {
+    //         infoBox.style.display = 'none';
+    //         // Do nothing when clicking on the environment
+    //     }
+    // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
 
     // ensure all entities are not shown
@@ -199,34 +201,22 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }
 
-    function showEntityPath(entity, status) {
+    function showEntityPath(entity, color=undefined) {
         if (!entity) return;
         
-        if (!status && entity.properties.uniqueness_range) {
-            status = entity.properties.uniqueness_range.getValue();
-        }
-        
-        console.log("showEntityPath called with status:", status);
-        
-        let color = Cesium.Color.WHITE;
-        if (status) {
-            const lcStatus = status.toLowerCase();
-            if (lcStatus.includes('most') || lcStatus.includes('top')) {
-                color = Cesium.Color.RED;    // top or most unique orbits in red
-            } else if (lcStatus.includes('least') || lcStatus.includes('bottom')) {
-                color = Cesium.Color.GREEN;  // bottom or least unique orbits in green
-            }
-        }
+        orbit_color = color ? color : Cesium.Color.WHITE;
         
         // Create or update the entity path with the correct color.
         if (entity.path) {
-            entity.path.material = new Cesium.ColorMaterialProperty(color);
+            entity.path.material = new Cesium.ColorMaterialProperty(orbit_color);
             entity.path.width = 2;
             entity.path.show = true;
-        } else {
+        } 
+        
+        else {
             entity.path = new Cesium.PathGraphics({
                 show: true,
-                material: new Cesium.ColorMaterialProperty(color),
+                material: new Cesium.ColorMaterialProperty(orbit_color),
                 width: 2
             });
         }
@@ -328,12 +318,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             throw new Error('topEntities and bottomEntities must have 5 entities each');
         }
 
-        // display the top and bottom entity orbits
-        topEntities.forEach(entity => showEntityPath(entity, 'top'));
-        bottomEntities.forEach(entity => showEntityPath(entity, 'bottom'));
+        topEntities.forEach(entity => showEntityPath(entity, Cesium.Color.GREEN));
+        bottomEntities.forEach(entity => showEntityPath(entity, Cesium.Color.RE));
 
-        // topEntities.forEach(entity => toggleOrbit(entity));
-        // bottomEntities.forEach(entity => toggleOrbit(entity));
     }
 
     // if there is a change in any of the orbit filter radios
@@ -348,50 +335,98 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     });
 
-    const searchButton = document.getElementById('searchButton');
-    const searchInput = document.getElementById('searchInput');
-
-    function performSearch(searchId) {
+    async function performSearch(searchId) {
         if (!searchId) {
-            searchId = searchInput.value.trim();
+            console.log("No search ID provided");
+            return;
         }
-        if (searchId) {
+        try {
+            // uncheck all of the radios
+            radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
+            radios.forEach(radio => {
+                document.getElementById(radio).checked = false;
+            });
+
+            console.log("performSearch called with searchId: ", searchId);
+            // Fetch neighbour lookup data.
+            const response = await fetch("data/neighbour_lookup.json");
+            
+            if (!response.ok) {
+                throw new Error("Failed to load neighbour lookup data");
+            }
+
+            const neighbourLookup = await response.json();
+            console.log("got response");
+
+            const neighbours = neighbourLookup[searchId];
+            const searchResults = document.getElementById('searchResults');
+
+            // hide the current list
+            topBottomInfoBox.style.display = 'none';
+
+            if (!neighbours) {
+                console.log("No neighbours found for NORAD ID: " + searchId);
+                if (searchResults) {
+                    searchResults.innerHTML = `<p>No neighbours found for NORAD ID: ${searchId}</p>`;
+                    searchResults.style.display = 'block';
+                }
+                return;
+            }
+            
+            // Build the ranked neighbour list.
+            const listItems = neighbours.map((n, index) => {
+                return `<li>${index + 1}. SatNo: ${n.satNo}, Distance: ${n.distance.toFixed(2)}</li>`;
+            }).join('');
+
+            const listHTML = `<ul style="padding-left: 20px; list-style-type: none;">${listItems}</ul>`;
+            
+            if (searchResults) {
+                console.log("searchResults found");
+                searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` + listHTML;
+                searchResults.style.display = 'block';
+            }
+
+            // now we want to render all the neighbours for the searched satellite
+            removeAllEntityPaths();
+            removeEntities();
+            
+            // toggleOrbit for each neighbour in the list, set to red
+            neighbours.forEach(neighbour => {
+                const entity = dataSource.entities.getById(neighbour.satNo);
+                if (entity) {
+                    showEntityPath(entity, Cesium.Color.RED);
+                }
+                else {
+                    console.log("Entity not found for NORAD ID: " + neighbour.satNo);
+                }
+            });
+
+            // toggle for the searched satellite, set to green
             const entity = dataSource.entities.getById(searchId);
             if (entity) {
-                    removeAllEntityPaths();
-                    showEntityPath(entity);
-                    highlightedEntities.push(entity);
-
-                    const entityPosition = entity.position.getValue(Cesium.JulianDate.now());
-                    
-                    const cartographic = Cesium.Cartographic.fromCartesian(entityPosition);
-                    const lat = cartographic.latitude;
-                    const lon = cartographic.longitude;
-                    const alt = cartographic.height;
-                    const zoomOutFactor = 5;
-                    const offsetLon = Math.max(100000000, lon * zoomOutFactor);
-                    const offsetLat = Math.max(100000000, lat * zoomOutFactor);
-                    const offsetAlt = Math.max(100000000, alt * zoomOutFactor);
-                    
-                    const offset = new Cesium.Cartesian3(offsetLon, offsetLat, offsetAlt);
-                    const destination = Cesium.Cartesian3.add(entityPosition, offset, new Cesium.Cartesian3());
-
-                    viewer.camera.flyTo({
-                        destination: destination,
-                        complete: () => displayInfoBox(entity)
-                    });
-                        }            
+                showEntityPath(entity, Cesium.Color.GREEN);
+            }
             else {
-                   alert('Entity not found/ analysed');
-                 }
-                      }
+                console.log("Entity not found for NORAD ID: " + searchId);
+            }
+
+            console.log("You should see results now");
+        } catch (error) {
+            console.error(error);
+        }
     }
 
-    searchButton.addEventListener('click', () => performSearch());
 
+    const searchButton = document.getElementById('searchButton');
+    const searchInput = document.getElementById('searchInput');
+    
+    searchButton.addEventListener('click', () => {
+        performSearch(searchInput.value.trim());
+    });
+    
     searchInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
-            performSearch();
+            performSearch(searchInput.value.trim());
         }
     });
 
@@ -401,14 +436,28 @@ document.addEventListener("DOMContentLoaded", async function() {
         infoBox.style.display = 'none';
     });
 
-    function toggleOrbit(entityId) {
+    function getEntityFromId(entityId){
         const entity = dataSource && dataSource.entities && typeof dataSource.entities.getById === 'function'
             ? dataSource.entities.getById(entityId)
             : null;
-        if (!entity) return;
+
+        return entity;
+    }
+
+    function toggleOrbit(entityId) {
+
+        const entity = getEntityFromId(entityId);
+
+        if (!entity) {
+            console.log("Entity not found");
+            return;
+        }
+
         if (entity.path) {
             removeEntityPath(entity);
-        } else {
+        } 
+        
+        else {
             showEntityPath(entity);
         }
     }

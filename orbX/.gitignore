@@ -1,0 +1,5 @@
+data/
+__pycache__/
+*.czml
+*.sh
+yasir_demo_dev.py
