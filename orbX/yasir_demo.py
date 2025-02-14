@@ -269,4 +269,4 @@ if __name__ == '__main__':
     build_czml(df)
     # orbital_distances()
     ionop_czml()
-    ionop_czml_neighbours()
+    # ionop_czml_neighbours()

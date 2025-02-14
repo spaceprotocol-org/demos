@@ -68,7 +68,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         loadingScreen.style.display = 'none';
         const searchContainer = document.getElementById('searchContainer');
-        searchContainer.style.display = 'block';
+        if (searchContainer) {
+          searchContainer.style.display = 'none';
+        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const idFromURL = urlParams.get('id');
