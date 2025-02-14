@@ -259,9 +259,14 @@ def main(from_strach=True):
 
     results.to_pickle("data/satellites_with_scores.pkl")
     
-from ionop_czml import ionop_czml       
+from ionop_czml import ionop_czml   
+from orbital_distances import orbital_distances
+from ionop_czml_neighbours import ionop_czml_neighbours
+    
 if __name__ == '__main__':
     main(from_strach= True)
     df = pd.read_pickle("data/satellites_with_scores.pkl")
     build_czml(df)
+    # orbital_distances()
     ionop_czml()
+    ionop_czml_neighbours()

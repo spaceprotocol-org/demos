@@ -186,8 +186,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     removeEntities();
     document.getElementById('radio-leo').checked = true;
     handleOrbitToggle();
-   
-    
+
     // Define toggleOrbit to show/hide the orbit path.
     function toggleOrbit(entityId, color) {
         const entity = dataSource && dataSource.entities && dataSource.entities.getById 
@@ -353,17 +352,13 @@ document.addEventListener("DOMContentLoaded", async function() {
             });
     
             console.log("performSearch called with searchId: ", searchId);
-            const response = await fetch("data/neighbour_lookup.json");
-            if (!response.ok) {
-                throw new Error("Failed to load neighbour lookup data");
-            }
-            const neighbourLookup = await response.json();
-            console.log("got response");
-    
+            
+            // Load neighbour lookup from the CZML file.
+            const neighbourLookup = await loadNeighbourLookup();
             const neighbours = neighbourLookup[searchId];
             const searchResults = document.getElementById('searchResults');
             topBottomInfoBox.style.display = 'none';
-    
+            
             if (!neighbours) {
                 console.log("No neighbours found for NORAD ID: " + searchId);
                 if (searchResults) {
@@ -386,7 +381,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 searchResults.style.display = 'block';
                 attachOrbitToggleHandlers();
             }
-    
+            
             // Remove old paths/entities.
             removeAllEntityPaths();
             removeEntities();
@@ -416,7 +411,6 @@ document.addEventListener("DOMContentLoaded", async function() {
             console.error(error);
         }
     }
-
 
     const searchButton = document.getElementById('searchButton');
     const searchInput = document.getElementById('searchInput');
