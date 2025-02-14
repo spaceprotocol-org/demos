@@ -148,15 +148,15 @@ document.addEventListener("DOMContentLoaded", async function() {
         infoBox.innerHTML = '';
     }
 
-    // Re-enable left-click so that when a satellite is clicked, its orbit is toggled.
-    viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
-        const pickedObject = viewer.scene.pick(movement.position);
-        if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
-            toggleOrbit(pickedObject.id);
-        } else {
-            removeAllEntityPaths();
-        }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    // // Re-enable left-click so that when a satellite is clicked, its orbit is toggled.
+    // viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+    //     const pickedObject = viewer.scene.pick(movement.position);
+    //     if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+    //         toggleOrbit(pickedObject.id);
+    //     } else {
+    //         removeAllEntityPaths();
+    //     }
+    // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     viewer.screenSpaceEventHandler.setInputAction(function onMouseMove(movement) {
         const pickedObject = viewer.scene.pick(movement.endPosition);
@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async function() {
    
     
     // Define toggleOrbit to show/hide the orbit path.
-    function toggleOrbit(entityId) {
+    function toggleOrbit(entityId, color) {
         const entity = dataSource && dataSource.entities && dataSource.entities.getById 
             ? dataSource.entities.getById(entityId)
             : null;
@@ -197,23 +197,23 @@ document.addEventListener("DOMContentLoaded", async function() {
         if (entity.path) {
             removeEntityPath(entity);
         } else {
-            showEntityPath(entity);
+            showEntityPath(entity, color);
         }
     }
+    window.toggleOrbit = toggleOrbit;
 
     function showEntityPath(entity, color=undefined) {
-        if (!entity) return;
-        
-        orbit_color = color ? color : Cesium.Color.WHITE;
+        // Use the passed color, or the saved color, otherwise default to white.
+        const orbit_color = color || entity.orbitColor || Cesium.Color.WHITE;
+        // Store the color on the entity for later toggling.
+        entity.orbitColor = orbit_color;
         
         // Create or update the entity path with the correct color.
         if (entity.path) {
             entity.path.material = new Cesium.ColorMaterialProperty(orbit_color);
             entity.path.width = 2;
             entity.path.show = true;
-        } 
-        
-        else {
+        } else {
             entity.path = new Cesium.PathGraphics({
                 show: true,
                 material: new Cesium.ColorMaterialProperty(orbit_color),
@@ -318,9 +318,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             throw new Error('topEntities and bottomEntities must have 5 entities each');
         }
 
-        topEntities.forEach(entity => showEntityPath(entity, Cesium.Color.GREEN));
-        bottomEntities.forEach(entity => showEntityPath(entity, Cesium.Color.RE));
-
+        topEntities.forEach(entity => showEntityPath(entity, Cesium.Color.RED));
+        bottomEntities.forEach(entity => showEntityPath(entity, Cesium.Color.GREEN));
     }
 
     // if there is a change in any of the orbit filter radios
@@ -341,29 +340,30 @@ document.addEventListener("DOMContentLoaded", async function() {
             return;
         }
         try {
-            // uncheck all of the radios
-            radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
+            // If not in entities, alert and exit
+            if (!dataSource.entities.getById(searchId)) {
+                alert("NORAD ID not found in data source");
+                return;
+            }
+
+            // Uncheck all of the radios.
+            const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
             radios.forEach(radio => {
                 document.getElementById(radio).checked = false;
             });
-
+    
             console.log("performSearch called with searchId: ", searchId);
-            // Fetch neighbour lookup data.
             const response = await fetch("data/neighbour_lookup.json");
-            
             if (!response.ok) {
                 throw new Error("Failed to load neighbour lookup data");
             }
-
             const neighbourLookup = await response.json();
             console.log("got response");
-
+    
             const neighbours = neighbourLookup[searchId];
             const searchResults = document.getElementById('searchResults');
-
-            // hide the current list
             topBottomInfoBox.style.display = 'none';
-
+    
             if (!neighbours) {
                 console.log("No neighbours found for NORAD ID: " + searchId);
                 if (searchResults) {
@@ -373,43 +373,44 @@ document.addEventListener("DOMContentLoaded", async function() {
                 return;
             }
             
-            // Build the ranked neighbour list.
-            const listItems = neighbours.map((n, index) => {
-                return `<li>${index + 1}. SatNo: ${n.satNo}, Distance: ${n.distance.toFixed(2)}</li>`;
-            }).join('');
-
-            const listHTML = `<ul style="padding-left: 20px; list-style-type: none;">${listItems}</ul>`;
-            
+            // Convert neighbour objects to satellite entities.
+            const satelliteEntities = neighbours
+                .map(neighbour => dataSource.entities.getById(neighbour.satNo))
+                .filter(entity => entity);
+    
+            // Use generateSatelliteList to show the list.
             if (searchResults) {
                 console.log("searchResults found");
-                searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` + listHTML;
+                searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` 
+                    + generateSatelliteList(satelliteEntities);
                 searchResults.style.display = 'block';
+                attachOrbitToggleHandlers();
             }
-
-            // now we want to render all the neighbours for the searched satellite
+    
+            // Remove old paths/entities.
             removeAllEntityPaths();
             removeEntities();
             
-            // toggleOrbit for each neighbour in the list, set to red
+            // Render each neighbour's orbit in red.
             neighbours.forEach(neighbour => {
                 const entity = dataSource.entities.getById(neighbour.satNo);
                 if (entity) {
                     showEntityPath(entity, Cesium.Color.RED);
-                }
-                else {
+                } else {
                     console.log("Entity not found for NORAD ID: " + neighbour.satNo);
                 }
             });
-
-            // toggle for the searched satellite, set to green
-            const entity = dataSource.entities.getById(searchId);
-            if (entity) {
-                showEntityPath(entity, Cesium.Color.GREEN);
-            }
+    
+            // Render the searched satellite's orbit in green.
+            const searchedEntity = dataSource.entities.getById(searchId);
+            if (searchedEntity) {
+                showEntityPath(searchedEntity, Cesium.Color.GREEN);
+            } 
+            
             else {
                 console.log("Entity not found for NORAD ID: " + searchId);
             }
-
+    
             console.log("You should see results now");
         } catch (error) {
             console.error(error);
@@ -444,25 +445,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         return entity;
     }
 
-    function toggleOrbit(entityId) {
-
-        const entity = getEntityFromId(entityId);
-
-        if (!entity) {
-            console.log("Entity not found");
-            return;
-        }
-
-        if (entity.path) {
-            removeEntityPath(entity);
-        } 
-        
-        else {
-            showEntityPath(entity);
-        }
-    }
-    window.toggleOrbit = toggleOrbit;
-    
     function generateSatelliteList(satellites) {
         return `<ul style="padding-left: 20px; list-style-type: none;">
             ${satellites.map(satellite => {
@@ -485,6 +467,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     function attachOrbitToggleHandlers() {
     
         const ids = document.querySelectorAll('.satellite-id');
+
         ids.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -496,6 +479,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     // In main.js-1, update displayTopAndBottomSatellitesByUniqueness:
     async function displayUniqueOrbitList() {
+        // close the search results panel
+        const searchResults = document.getElementById('searchResults');
+        searchResults.style.display = 'none';
         
         const selectedOrbit = getSelectedOrbit();
 
