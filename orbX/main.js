@@ -335,33 +335,40 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     });
 
+    function getEntityNeighbours(entity) {
+        const now = Cesium.JulianDate.now();
+        return entity.properties.neighbours?.getValue(now);
+    }
+
     async function performSearch(searchId) {
         if (!searchId) {
             console.log("No search ID provided");
             return;
         }
         try {
-            // If not in entities, alert and exit
-            if (!dataSource.entities.getById(searchId)) {
+            // If the searched entity is not found, alert and exit.
+            const searchedEntity = dataSource.entities.getById(searchId);
+            if (!searchedEntity) {
                 alert("NORAD ID not found in data source");
                 return;
             }
-
+            
             // Uncheck all of the radios.
             const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
             radios.forEach(radio => {
                 document.getElementById(radio).checked = false;
             });
-    
+        
             console.log("performSearch called with searchId: ", searchId);
             
-            // Load neighbour lookup from the CZML file.
-            const neighbourLookup = await loadNeighbourLookup();
-            const neighbours = neighbourLookup[searchId];
+            // Retrieve the neighbour list directly from entity properties.
+            const now = Cesium.JulianDate.now();
+            const neighbours = searchedEntity.properties.neighbours?.getValue(now);
+        
             const searchResults = document.getElementById('searchResults');
             topBottomInfoBox.style.display = 'none';
             
-            if (!neighbours) {
+            if (!neighbours || neighbours.length === 0) {
                 console.log("No neighbours found for NORAD ID: " + searchId);
                 if (searchResults) {
                     searchResults.innerHTML = `<p>No neighbours found for NORAD ID: ${searchId}</p>`;
@@ -374,8 +381,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             const satelliteEntities = neighbours
                 .map(neighbour => dataSource.entities.getById(neighbour.satNo))
                 .filter(entity => entity);
-    
-            // Use generateSatelliteList to show the list.
+        
+            // Display the list.
             if (searchResults) {
                 console.log("searchResults found");
                 searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` 
@@ -397,17 +404,10 @@ document.addEventListener("DOMContentLoaded", async function() {
                     console.log("Entity not found for NORAD ID: " + neighbour.satNo);
                 }
             });
-    
+        
             // Render the searched satellite's orbit in green.
-            const searchedEntity = dataSource.entities.getById(searchId);
-            if (searchedEntity) {
-                showEntityPath(searchedEntity, Cesium.Color.GREEN);
-            } 
-            
-            else {
-                console.log("Entity not found for NORAD ID: " + searchId);
-            }
-    
+            showEntityPath(searchedEntity, Cesium.Color.GREEN);
+        
             console.log("You should see results now");
         } catch (error) {
             console.error(error);

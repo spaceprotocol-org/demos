@@ -78,8 +78,11 @@ def build_czml(df):
                   for i, coord in enumerate(coordinates)]
 
         # Include uniqueness_range explicitly.
-        additional_properties = {'uniqueness_range': row.get('uniqueness_range', 'none')}
-        
+        additional_properties = {
+            'uniqueness_range': row.get('uniqueness_range', 'none'),
+            'neighbours': row.get("neighbours", [])
+        }
+                
         czml.append({
             'id': row['NORAD_CAT_ID'],
             'name': row['OBJECT_NAME'],
@@ -201,6 +204,61 @@ import pickle
 
 '''
 
+def compute_neighbour_lookup(top_n=10):
+    """
+    Load satellites from TLE file, compute the distance matrix for all satellites,
+    and return a dictionary where each key (satNo) maps to a list of its 10 nearest neighbours,
+    with each neighbour represented as a dict with 'satNo' and 'distance'.
+    """
+    
+    # Load TLE data.
+    with open("data/elset_current.text", "r") as f:
+        lines = [l.strip() for l in f.readlines()]
+        
+    tles = []
+    for i in range(0, len(lines), 3):
+        name = lines[i][2:]
+        tle_line1 = lines[i+1]
+        tle_line2 = lines[i+2]
+        # Extract NORAD ID from the TLE line, pad with zeroes as necessary.
+        satNo = str(tle_line1[2:2+5]).replace(" ", "0")
+        tles.append([satNo, name, tle_line1, tle_line2])
+        
+    df = pd.DataFrame(tles, columns=["satNo", "name", "TLE_LINE1", "TLE_LINE2"])
+    
+    # Remove any 'TO BE ASSIGNED' satellites.
+    df = df[~df['name'].astype(str).str.contains('TBA - TO BE ASSIGNED')]
+    
+    # Compute the orbits and full distance matrix.
+    line1 = df['TLE_LINE1'].values
+    line2 = df['TLE_LINE2'].values
+    print("Calculating orbits")
+    orbits = VectorizedKeplerianOrbit(line1, line2)
+    
+    print("Calculating distances")
+    distance_matrix = np.array(VectorizedKeplerianOrbit.DistanceMetric(orbits, orbits))
+    
+    # Build neighbor lookup dictionary.
+    neighbour_lookup = {}
+    for idx, satNo in enumerate(df['satNo']):
+        distances = distance_matrix[idx]
+        # Sort indices by distance, ignoring self (assumes self distance == 0)
+        sorted_indices = np.argsort(distances)
+        neighbour_indices = [j for j in sorted_indices if j != idx][:top_n]
+        
+        # Build a list of neighbor objects with satNo and corresponding distance.
+        neighbours = []
+        for neighbour_idx in neighbour_indices:
+            neighbour_satNo = df.iloc[neighbour_idx]['satNo']
+            neighbour_distance = float(distances[neighbour_idx])
+            neighbours.append({"satNo": neighbour_satNo, "distance": neighbour_distance})
+        
+        neighbour_lookup[satNo] = neighbours
+        
+    return neighbour_lookup
+
+
+
 def main(from_strach=True):    
     sats_df = get_satellites_info(from_strach)
     # orbital_regimes = ["GEO", "MEO", "HEO", "LEO"]
@@ -256,6 +314,11 @@ def main(from_strach=True):
         
         print(f"Mean distances score for {regime}: {np.mean(scores)}")
         print(f"Variation in distances score for {regime}: {np.var(scores)}")
+        
+    neighbour_lookup = compute_neighbour_lookup(top_n=10)
+    # Add neighbour info as a new column.
+    results["neighbours"] = results["NORAD_CAT_ID"].apply(lambda satNo: neighbour_lookup.get(satNo, []))
+    results.to_pickle("data/satellites_with_scores.pkl")
 
     results.to_pickle("data/satellites_with_scores.pkl")
     
