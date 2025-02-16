@@ -325,7 +325,10 @@ document.addEventListener("DOMContentLoaded", async function() {
                     Cesium.Math.toRadians(0),
                     Cesium.Math.toRadians(-90),
                 )
-            });
+            }
+        );
+
+        updateRankingsDisplay(topEntities, bottomEntities);
     }
 
     // if there is a change in any of the orbit filter radios
@@ -410,13 +413,16 @@ document.addEventListener("DOMContentLoaded", async function() {
             // Render the searched satellite's orbit in green.
             showEntityPath(searchedEntity, Cesium.Color.GREEN);
 
-            await viewer.flyTo([...neighbourEntities, searchedEntity], {
-                duration: 2,
-                offset: new Cesium.HeadingPitchRange(
-                    Cesium.Math.toRadians(0),
-                    Cesium.Math.toRadians(-90)
-                )
-            });
+            await viewer.flyTo(
+                [...neighbourEntities, searchedEntity], 
+                {
+                    duration: 2,
+                    offset: new Cesium.HeadingPitchRange(
+                        Cesium.Math.toRadians(0),
+                        Cesium.Math.toRadians(-90)
+                    )
+                }
+            );
         
             console.log("You should see results now");
         } catch (error) {
@@ -471,9 +477,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     
     // After you update the infobox content, attach event listeners:
     function attachOrbitToggleHandlers() {
-    
         const ids = document.querySelectorAll('.satellite-id');
-
         ids.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -514,6 +518,69 @@ document.addEventListener("DOMContentLoaded", async function() {
         displayUniqueOrbitList();
         //clear entities
         
+    }
+
+    function renderRankings(topEntities, bottomEntities) {
+        // Helper to render a table given a title, indicator class and list of entities
+        const renderTable = (title, data, indicatorClass) => {
+            // Map each entity to a table row. Adjust property names as needed.
+            const rows = data.map((entity, index) => {
+                const uniqueness = entity.properties.uniqueness.getValue(Cesium.JulianDate.now());
+                const uniquenessStr = (typeof uniqueness === 'number')
+                    ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
+                    : "N/A";
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="score-cell">${uniquenessStr}</td>
+                        <td><a href="#" class="norad-link">(${entity.id})</a></td>
+                        <td class="sat-name">${entity.name || "N/A"}</td>
+                    </tr>
+                `;
+            }).join("");
+            
+            return `
+                <div class="rankings-card">
+                    <div class="card-header">
+                        <div class="header-indicator ${indicatorClass}"></div>
+                        <h2 class="card-title">${title}</h2>
+                    </div>
+                    <table class="rankings-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Score</th>
+                                <th>NORAD ID</th>
+                                <th>Satellite Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                    <div class="table-footer">
+                        ${title.includes('Most')
+                            ? 'Higher score indicates more unique orbital characteristics'
+                            : 'Lower score indicates more common orbital characteristics'
+                        }
+                    </div>
+                </div>
+            `;
+        };
+    
+        return `
+            <div class="container">
+                ${renderTable('5 Most Unique Orbits (MEO)', topEntities, 'red-indicator')}
+                ${renderTable('5 Least Unique Orbits (MEO)', bottomEntities, 'green-indicator')}
+            </div>
+        `;
+    }
+    
+    // Example function to update the topBottomInfoBox content
+    function updateRankingsDisplay(topEntities, bottomEntities) {
+        const topBottomInfoBox = document.getElementById('topBottomInfoBox');
+        topBottomInfoBox.innerHTML = renderRankings(topEntities, bottomEntities);
+        topBottomInfoBox.style.display = 'block';
     }
 
     openNav();

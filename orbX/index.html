@@ -34,34 +34,60 @@
                     <input type="text" id="searchInput" placeholder="Enter NORAD ID (e.g., 48349)" value="48349">
                     <button id="search-btn">Search</button>
                 </div>
-            </div>
+            </div>  
             <div class="orbit-section">
                 <h2>Orbital Regime</h2>
                 <div class="orbit-options">
                     <div class="orbit-option">
                         <input type="radio" id="radio-leo" name="orbit" class="custom-radio" checked>
-                        <label for="leo">Low Earth Orbit (LEO)</label>
+                        <label for="radio-leo">Low Earth Orbit (LEO)</label>
                     </div>
                     <div class="orbit-option">
                         <input type="radio" id="radio-meo" name="orbit" class="custom-radio">
-                        <label for="meo">Medium Earth Orbit (MEO)</label>
+                        <label for="radio-meo">Medium Earth Orbit (MEO)</label>
                     </div>
                     <div class="orbit-option">
                         <input type="radio" id="radio-geo" name="orbit" class="custom-radio">
-                        <label for="geo">Geostationary Earth Orbit (GEO)</label>
+                        <label for="radio-geo">Geostationary Earth Orbit (GEO)</label>
                     </div>
                     <div class="orbit-option">
                         <input type="radio" id="radio-heo" name="orbit" class="custom-radio">
-                        <label for="heo">High Earth Orbit (HEO)</label>
+                        <label for="radio-heo">High Earth Orbit (HEO)</label>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <!-- <div class="result-section" id="result-section">
+                <h2>Satellite Information</h2>
+                <div class="orbit-info">
+                    <div class="info-card">
+                        <h3>Name</h3>
+                        <p id="sat-name">STARLINK-1234</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>NORAD ID</h3>
+                        <p id="sat-norad">48349</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Orbital Period</h3>
+                        <p id="sat-period">95.2 minutes</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Altitude</h3>
+                        <p id="sat-altitude">550 km</p>
+                    </div>
+                </div>
+            </div> -->
+        </div>  
     </div>
+
+
 
     <div id="topBottomInfoBox"></div>
     <div id="searchResults"></div>
-    <script src="main.js"></script>
+    <script src="main.js">
+        
+    </script>
 
 </body>
 </html>
