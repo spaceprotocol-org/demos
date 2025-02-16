@@ -521,6 +521,10 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function renderRankings(topEntities, bottomEntities) {
+        // get the selected orbit
+        const selectedOrbit = getSelectedOrbit();
+
+
         // Helper to render a table given a title, indicator class and list of entities
         const renderTable = (title, data, indicatorClass) => {
             // Map each entity to a table row. Adjust property names as needed.
@@ -570,8 +574,8 @@ document.addEventListener("DOMContentLoaded", async function() {
     
         return `
             <div class="container">
-                ${renderTable('5 Most Unique Orbits (MEO)', topEntities, 'red-indicator')}
-                ${renderTable('5 Least Unique Orbits (MEO)', bottomEntities, 'green-indicator')}
+                ${renderTable(`5 Most Unique Orbits (${selectedOrbit})`, topEntities, 'red-indicator')}
+                ${renderTable(`5 Least Unique Orbits (${selectedOrbit})`, bottomEntities, 'green-indicator')}
             </div>
         `;
     }
