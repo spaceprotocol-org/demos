@@ -67,10 +67,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
 
         loadingScreen.style.display = 'none';
-        const searchContainer = document.getElementById('searchContainer');
-        if (searchContainer) {
-          searchContainer.style.display = 'none';
-        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const idFromURL = urlParams.get('id');
@@ -335,10 +331,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     });
 
-    function getEntityNeighbours(entity) {
-        const now = Cesium.JulianDate.now();
-        return entity.properties.neighbours?.getValue(now);
-    }
 
     async function performSearch(searchId) {
         if (!searchId) {
@@ -346,6 +338,16 @@ document.addEventListener("DOMContentLoaded", async function() {
             return;
         }
         try {
+
+            
+            // Uncheck all of the radios.
+            const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
+            radios.forEach(radio => {
+                document.getElementById(radio).checked = false;
+            });
+
+            
+    
             // If the searched entity is not found, alert and exit.
             const searchedEntity = dataSource.entities.getById(searchId);
             if (!searchedEntity) {
@@ -353,22 +355,25 @@ document.addEventListener("DOMContentLoaded", async function() {
                 return;
             }
             
-            // Uncheck all of the radios.
-            const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
-            radios.forEach(radio => {
-                document.getElementById(radio).checked = false;
-            });
-        
-            console.log("performSearch called with searchId: ", searchId);
+            // go through each of the rank : satNo pairs for the neighbours
+            const neighbourIds = searchedEntity.properties.neighbours?.getValue();
+            console.log("neighbourIds: ", neighbourIds);
             
-            // Retrieve the neighbour list directly from entity properties.
-            const now = Cesium.JulianDate.now();
-            const neighbours = searchedEntity.properties.neighbours?.getValue(now);
-        
+            const neighbourEntities = [];
+            if (neighbourIds) {
+                const neighbourIdArray = Object.values(neighbourIds);
+                neighbourIdArray.forEach(neighbourId => {
+                    const neighbourEntity = dataSource.entities.getById(neighbourId);
+                    if (neighbourEntity) {
+                        neighbourEntities.push(neighbourEntity);
+                    }
+                });
+            }
+
             const searchResults = document.getElementById('searchResults');
             topBottomInfoBox.style.display = 'none';
             
-            if (!neighbours || neighbours.length === 0) {
+            if (!neighbourEntities || neighbourEntities.length === 0) {
                 console.log("No neighbours found for NORAD ID: " + searchId);
                 if (searchResults) {
                     searchResults.innerHTML = `<p>No neighbours found for NORAD ID: ${searchId}</p>`;
@@ -377,16 +382,11 @@ document.addEventListener("DOMContentLoaded", async function() {
                 return;
             }
             
-            // Convert neighbour objects to satellite entities.
-            const satelliteEntities = neighbours
-                .map(neighbour => dataSource.entities.getById(neighbour.satNo))
-                .filter(entity => entity);
-        
             // Display the list.
             if (searchResults) {
                 console.log("searchResults found");
                 searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` 
-                    + generateSatelliteList(satelliteEntities);
+                    + generateSatelliteList(neighbourEntities);
                 searchResults.style.display = 'block';
                 attachOrbitToggleHandlers();
             }
@@ -396,14 +396,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             removeEntities();
             
             // Render each neighbour's orbit in red.
-            neighbours.forEach(neighbour => {
-                const entity = dataSource.entities.getById(neighbour.satNo);
-                if (entity) {
-                    showEntityPath(entity, Cesium.Color.RED);
-                } else {
-                    console.log("Entity not found for NORAD ID: " + neighbour.satNo);
-                }
-            });
+            neighbourEntities.forEach(neighbour => showEntityPath(neighbour, Cesium.Color.RED));
         
             // Render the searched satellite's orbit in green.
             showEntityPath(searchedEntity, Cesium.Color.GREEN);
