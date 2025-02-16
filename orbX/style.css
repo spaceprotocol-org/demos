@@ -192,8 +192,8 @@ html, body, #cesiumContainer {
     bottom: 90px;
     right: 10px;
     padding: 15px;
-    background-color: white;
-    border: 1px solid #ccc;
+    background-color: transparent;
+    border: none;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   
     font-family: 'Arial', sans-serif;
@@ -469,4 +469,135 @@ button:hover {
     padding: 10px 20px;
     text-align: right;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+/* for the neighbour list */
+
+.neighbour-list-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Arial', sans-serif;
+    background-color: none;
+    padding: 20px;
+    box-sizing: border-box;
+    color: white;
+}
+  
+.neighbour-list-rankings-card {
+    background-color: rgba(30, 30, 30, 0.7);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+  
+.neighbour-list-card-header {
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: rgba(30, 60, 90, 0.5);
+}
+  
+.neighbour-list-target-satellite {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #fff;
+}
+  
+.neighbour-list-target-badge {
+    background-color: #4d90fe;
+    color: white;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+  
+.neighbour-list-rankings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+  
+.neighbour-list-rankings-table th {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #999;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    padding: 12px 20px;
+}
+  
+.neighbour-list-rankings-table td {
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+  
+.neighbour-list-rankings-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+  
+.score-cell {
+    font-family: 'Consolas', monospace;
+    font-weight: 600;
+    color: #4d90fe;
+}
+  
+.norad-link {
+    color: #4d90fe;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+  
+.norad-link:hover {
+    color: #77adff;
+    text-decoration: underline;
+}
+  
+.neighbour-list-sat-name {
+    font-weight: 500;
+}
+  
+.neighbour-list-color-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+    border: 1px solid #fff;
+}
+  
+.neighbour-list-color-green {
+    background-color: #34c759;
+    box-shadow: 0 0 5px rgba(52, 199, 89, 0.5);
+}
+  
+.neighbour-list-color-red {
+    background-color: #ff3b30;
+    box-shadow: 0 0 5px rgba(255, 59, 48, 0.5);
+}
+  
+.neighbour-list-table-footer {
+    font-size: 0.75rem;
+    color: #888;
+    padding: 10px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+  
+.neighbour-list-legend {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+  
+.neighbour-list-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }

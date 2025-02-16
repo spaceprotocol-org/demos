@@ -397,8 +397,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             // Display the list.
             if (searchResults) {
                 console.log("searchResults found");
-                searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` 
-                    + generateSatelliteList(neighbourEntities);
+                // Wrap neighbourEntities into an object with targetId and list for generateNeighbourSatelliteList
+                searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` +
+                    generateNeighbourSatelliteList({ targetId: searchId, list: neighbourEntities });
                 searchResults.style.display = 'block';
                 attachOrbitToggleHandlers();
             }
@@ -585,6 +586,56 @@ document.addEventListener("DOMContentLoaded", async function() {
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = renderRankings(topEntities, bottomEntities);
         topBottomInfoBox.style.display = 'block';
+    }
+
+    function generateNeighbourSatelliteList(satellites) {
+
+        console.log("called generateNeighbourSatelliteList");
+        
+        let html = `
+        <div class="neighbour-list-container">
+          <div class="neighbour-list-rankings-card">
+            <div class="neighbour-list-card-header">
+              <h2 class="neighbour-list-target-satellite">10 Nearest Satellites for NORAD ID: <span class="neighbour-list-target-badge">${satellites.id}</span></h2>
+            </div>
+            <table class="neighbour-list-rankings-table">
+              <thead>
+                <tr>
+                  <th>Score</th>
+                  <th>NORAD ID</th>
+                  <th>Satellite Name</th>
+                </tr>
+              </thead>
+              <tbody>`;
+        
+        satellites.list.forEach((sat, index) => {
+            html += `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td><a href="#" class="norad-link">(${sat.id})</a></td>
+                  <td class="neighbour-list-sat-name">${sat.name}</td>
+                </tr>`;
+        });
+        
+        html += `
+              </tbody>
+            </table>
+            <div class="neighbour-list-table-footer">
+              <div class="neighbour-list-legend">
+                <div class="neighbour-list-legend-item">
+                  <span class="neighbour-list-color-indicator neighbour-list-color-green"></span>
+                  <span>Searched satellite</span>
+                </div>
+                <div class="neighbour-list-legend-item">
+                  <span class="neighbour-list-color-indicator neighbour-list-color-red"></span>
+                  <span>Nearby satellites</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        
+        return html;
     }
 
     openNav();
