@@ -443,14 +443,14 @@ button:hover {
     font-weight: 600;
 }
   
-.norad-link {
+.satellite-id {
     color: #4d90fe;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s;
 }
   
-.norad-link:hover {
+.satellite-id:hover {
     color: #77adff;
     text-decoration: underline;
 }
@@ -545,14 +545,14 @@ button:hover {
     color: #4d90fe;
 }
   
-.norad-link {
+.satellite-id {
     color: #4d90fe;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s;
 }
   
-.norad-link:hover {
+.satellite-id:hover {
     color: #77adff;
     text-decoration: underline;
 }

@@ -401,7 +401,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` +
                     generateNeighbourSatelliteList({ targetId: searchId, list: neighbourEntities });
                 searchResults.style.display = 'block';
-                attachOrbitToggleHandlers();
+                attachNeighbourLinkHandlers('.neighbour-list-container .satellite-id');
             }
             
             // Remove old paths/entities.
@@ -462,20 +462,20 @@ document.addEventListener("DOMContentLoaded", async function() {
         return `<ul style="padding-left: 20px; list-style-type: none;">
             ${satellites.map(satellite => {
                 const uniqueness = satellite.properties.uniqueness?.getValue();
-                const uniquenessStr = typeof uniqueness === 'number'
+                const uniquenessStr = (typeof uniqueness === 'number')
                     ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
                     : "N/A";
                 return `<li>
                     Score: <b>${uniquenessStr}</b> 
-                    (<span class="satellite-id" 
-                        data-id="${satellite.id}" 
-                        style="cursor: pointer; color: blue; text-decoration: underline;">${satellite.id}</span>)
+                    (<span href="#" class="satellite-id" data-id="${satellite.id}" style="cursor: pointer; color: blue; text-decoration: underline;">
+                        ${satellite.id}
+                    </span>)
                     ${satellite.name}
                 </li>`;
             }).join('')}
         </ul>`;
     }
-    
+
     // After you update the infobox content, attach event listeners:
     function attachOrbitToggleHandlers() {
         const ids = document.querySelectorAll('.satellite-id');
@@ -488,28 +488,64 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
     }
 
+    function attachNeighbourLinkHandlers(selector = '.satellite-id') {
+        const links = document.querySelectorAll(selector);
+        links.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const searchId = link.getAttribute('data-id');
+                if (searchId) {
+                    console.log("Performing search on:", searchId);
+                    performSearch(searchId);
+                } else {
+                    console.error("No data-id found on the clicked element.");
+                }
+            });
+        });
+    }
+
+    function attachOrbitToggleRowHandlers(selector = '.neighbour-row') {
+        const rows = document.querySelectorAll(selector);
+        rows.forEach(row => {
+            row.addEventListener('click', (e) => {
+                // Prevent the inner link click from also firing if needed:
+                if (e.target.tagName.toLowerCase() !== 'a') {
+                    e.preventDefault();
+                    const noradId = row.getAttribute('data-id');
+                    if (noradId) {
+                        console.log("Toggling orbit for:", noradId);
+                        toggleOrbit(noradId);
+                    } else {
+                        console.error("No data-id found on the row.");
+                    }
+                }
+            });
+        });
+    }
+
     // In main.js-1, update displayTopAndBottomSatellitesByUniqueness:
     async function displayUniqueOrbitList() {
+        console.log("displayUniqueOrbitList called");
         // close the search results panel
         const searchResults = document.getElementById('searchResults');
         searchResults.style.display = 'none';
         
         const selectedOrbit = getSelectedOrbit();
-
         // get the top and bottom 5 entities
         const entities = getOrbitEntities(selectedOrbit);
         const [topEntities, bottomEntities] = getTopBottomEntities(entities);
-
+    
         // Build the info box content using generateSatelliteList.
         let infoboxContent = `<h3><span class="box red"></span>5 Most Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(topEntities);
         infoboxContent += `<h3><span class="box green"></span>5 Least Unique Orbits (${selectedOrbit})</h3>` + generateSatelliteList(bottomEntities);
-
+    
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = infoboxContent;
-        attachOrbitToggleHandlers();
-
-        // Display the container if toggleUnique is selected.
+        
+        
         topBottomInfoBox.style.display = 'block';
+
+        attachNeighbourLinkHandlers('.satellite-id');
     }
 
     function handleOrbitToggle() {
@@ -525,7 +561,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         // get the selected orbit
         const selectedOrbit = getSelectedOrbit();
 
-
         // Helper to render a table given a title, indicator class and list of entities
         const renderTable = (title, data, indicatorClass) => {
             // Map each entity to a table row. Adjust property names as needed.
@@ -538,7 +573,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                     <tr>
                         <td>${index + 1}</td>
                         <td class="score-cell">${uniquenessStr}</td>
-                        <td><a href="#" class="norad-link">(${entity.id})</a></td>
+                        <td><a href="#" class="satellite-id">(${entity.id})</a></td>
                         <td class="sat-name">${entity.name || "N/A"}</td>
                     </tr>
                 `;
@@ -589,14 +624,12 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function generateNeighbourSatelliteList(satellites) {
-
-        console.log("called generateNeighbourSatelliteList");
         
         let html = `
         <div class="neighbour-list-container">
           <div class="neighbour-list-rankings-card">
             <div class="neighbour-list-card-header">
-              <h2 class="neighbour-list-target-satellite">10 Nearest Satellites for NORAD ID: <span class="neighbour-list-target-badge">${satellites.id}</span></h2>
+              <h2 class="neighbour-list-target-satellite">10 Nearest Satellites for NORAD ID: <span class="neighbour-list-target-badge">${satellites.targetId}</span></h2>
             </div>
             <table class="neighbour-list-rankings-table">
               <thead>
@@ -612,7 +645,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             html += `
                 <tr>
                   <td>${index + 1}</td>
-                  <td><a href="#" class="norad-link">(${sat.id})</a></td>
+                  <td>
+                    <a href="#" class="satellite-id" data-id="${sat.id}">(${sat.id})</a>
+                  </td>
                   <td class="neighbour-list-sat-name">${sat.name}</td>
                 </tr>`;
         });
