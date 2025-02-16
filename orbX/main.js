@@ -401,7 +401,13 @@ document.addEventListener("DOMContentLoaded", async function() {
                 searchResults.innerHTML = `<h3>10 Nearest Satellites for NORAD ID: ${searchId}</h3>` +
                     generateNeighbourSatelliteList({ targetId: searchId, list: neighbourEntities });
                 searchResults.style.display = 'block';
+                // on click of a satellite id, show its 10 nearest neighbours
                 attachNeighbourLinkHandlers('.neighbour-list-container .satellite-id');
+                
+                // on click of a row, toggle the orbit 
+                const neighbourListContainer = document.querySelector('.neighbour-list-container');
+                attachOrbitToggleRowHandlers('.neighbour-row');
+
             }
             
             // Remove old paths/entities.
@@ -643,12 +649,12 @@ document.addEventListener("DOMContentLoaded", async function() {
         
         satellites.list.forEach((sat, index) => {
             html += `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td>
+                <tr class="neighbour-row" data-id="${sat.id}">
+                    <td>${index + 1}</td>
+                    <td>
                     <a href="#" class="satellite-id" data-id="${sat.id}">(${sat.id})</a>
-                  </td>
-                  <td class="neighbour-list-sat-name">${sat.name}</td>
+                    </td>
+                    <td class="neighbour-list-sat-name">${sat.name}</td>
                 </tr>`;
         });
         
