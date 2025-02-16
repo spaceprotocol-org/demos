@@ -6,14 +6,6 @@ html, body, #cesiumContainer {
     overflow: hidden;
 }
 
-button {
-    color: #111;
-    background-color: #f1f1f1;
-}
-button:hover {
-    background-color: #3066be;
-}
-
 
 #loadingScreen {
     position: fixed;
@@ -123,24 +115,6 @@ button:hover {
     padding: 16px;
 }
 
-#controls {
-    margin-top: 50px;
-    padding-left: 15px
-}
-
-#controls label {
-    display: block;
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #fff;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-#controls input[type="radio"] {
-    accent-color: #444;
-}
-
 #reset {
     display: block;
     margin-top: 10px;
@@ -156,48 +130,6 @@ button:hover {
 
 #reset:hover {
     background-color: #3066be;
-}
-
-#searchContainer {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    padding: 10px 15px;
-}
-
-#searchContainer input {
-    padding: 8px 10px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    transition: border-color 0.3s;
-}
-
-#searchContainer input:focus {
-    border-color: #888;
-    outline: none;
-}
-
-#searchContainer button {
-    padding: 8px 15px;
-    font-size: 14px;
-    background-color: lightgrey;
-    border: none;
-    border-radius: 5px;
-    color: black;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.3s;
-    
-}
-
-#searchContainer button:hover {
-    background-color: #3066be;
-    /* transform: scale(1.05); */
-}
-
-#searchContainer button:active {
-    background-color: #388e3c;
 }
 
 #legendContainer {
@@ -287,24 +219,6 @@ button:hover {
     z-index: 2;
 }
 
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background: linear-gradient(135deg, #48c6ef, #6f86d6);
-    color: #444;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.3s;
-}
-button:hover {
-    background: linear-gradient(135deg, #6f86d6, #48c6ef);
-    transform: scale(1.05);
-}
-button:active {
-    transform: scale(0.98);
-}
-
 .box {
     display: inline-block;
     vertical-align: middle;
@@ -322,4 +236,57 @@ button:active {
 .green {
     background-color: green;
 }
+
+
+
+.controls-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    
+}
   
+.search-section {
+    background-color: rgba(30, 30, 30, 0.7);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', sans-serif;
+}
+  
+h2 {
+    margin-top: 0;
+    color: #4d90fe;
+    font-size: 1.2rem;
+}
+  
+.searchContainer {
+    display: flex;
+    gap: 10px;
+   
+}
+  
+input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background-color: #1e1e1e;
+    color: #fff;
+    font-size: 1rem;
+}
+  
+button {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4d90fe, #357ae8);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+  
+button:hover {
+    background: linear-gradient(135deg, #5a9cff, #4285f4);
+}

@@ -27,33 +27,37 @@
     <div id="cesiumContainer"></div>
     <div id="infoBox" style="display: none;"></div>
     <div id="sideNav" class="sidenav">
-        <!-- <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a> -->
-        <div id="searchContainer">
-            <input type="text" id="searchInput" placeholder="NORAD ID"><button id="searchButton">Search</button>
-        </div>
-        <div id="controls">
-            <div id="orbitFilters">
-                <h3 style="color:#fff; font-size:14px; margin-top:15px;">Orbital Regime</h3>
-                <label>
-                    <input type="radio" name="orbitFilters" id="radio-leo" value="LEO">
-                    <span>Low Earth Orbit (LEO)</span>
-                </label>
-                <label>
-                    <input type="radio" name="orbitFilters" id="radio-meo" value="MEO">
-                    <span>Medium Earth Orbit  (MEO)</span>
-                </label>
-                <label>
-                    <input type="radio" name="orbitFilters" id="radio-geo" value="GEO">
-                    <span>Geostationary Earth Orbit (GEO)</span>
-                </label>
-                <label>
-                    <input type="radio" name="orbitFilters" id="radio-heo" value="HEO">
-                    <span>High Earth Orbit (HEO)</span>
-                </label>
+        <div class="container">
+            <div class="search-section">
+                <h2>Satellite Lookup</h2>
+                <div class="searchContainer">
+                    <input type="text" id="searchInput" placeholder="Enter NORAD ID (e.g., 48349)" value="48349">
+                    <button id="search-btn">Search</button>
+                </div>
+            </div>
+            <div id="controls">
+                <div id="orbitFilters">
+                    <label>
+                        <input type="radio" name="orbitFilters" id="radio-leo" value="LEO">
+                        <span>Low Earth Orbit (LEO)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="orbitFilters" id="radio-meo" value="MEO">
+                        <span>Medium Earth Orbit  (MEO)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="orbitFilters" id="radio-geo" value="GEO">
+                        <span>Geostationary Earth Orbit (GEO)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="orbitFilters" id="radio-heo" value="HEO">
+                        <span>High Earth Orbit (HEO)</span>
+                    </label>
+                </div>
             </div>
         </div>
     </div>
-    <!-- <button id="openNavBtn" onclick="openNav()">☰</button> -->
+
     <div id="topBottomInfoBox"></div>
     <div id="searchResults"></div>
     <script src="main.js"></script>

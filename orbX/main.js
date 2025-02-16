@@ -424,7 +424,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }
 
-    const searchButton = document.getElementById('searchButton');
+    const searchButton = document.getElementById('search-btn');
     const searchInput = document.getElementById('searchInput');
     
     searchButton.addEventListener('click', () => {
