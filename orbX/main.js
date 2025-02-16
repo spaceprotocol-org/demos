@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         sceneModePicker: false,
         baseLayerPicker: false,
         navigationHelpButton: false,
-        homeButton: true
+        homeButton: false
     });
 
     viewer.scene.globe.enableLighting = true;
@@ -405,6 +405,10 @@ document.addEventListener("DOMContentLoaded", async function() {
         
             // Render the searched satellite's orbit in green.
             showEntityPath(searchedEntity, Cesium.Color.GREEN);
+
+            await viewer.flyTo([...neighbourEntities, searchedEntity], {
+                duration: 2
+            });
         
             console.log("You should see results now");
         } catch (error) {
