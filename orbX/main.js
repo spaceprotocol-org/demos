@@ -320,7 +320,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         await viewer.flyTo(
             [...topEntities, ...bottomEntities],
             {
-                duration: 1
+                duration: 1,
+                offset: new Cesium.HeadingPitchRange(
+                    Cesium.Math.toRadians(0),
+                    Cesium.Math.toRadians(-90),
+                )
             });
     }
 
@@ -407,7 +411,11 @@ document.addEventListener("DOMContentLoaded", async function() {
             showEntityPath(searchedEntity, Cesium.Color.GREEN);
 
             await viewer.flyTo([...neighbourEntities, searchedEntity], {
-                duration: 2
+                duration: 2,
+                offset: new Cesium.HeadingPitchRange(
+                    Cesium.Math.toRadians(0),
+                    Cesium.Math.toRadians(-90)
+                )
             });
         
             console.log("You should see results now");
