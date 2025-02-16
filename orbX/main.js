@@ -317,7 +317,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         bottomEntities.forEach(entity => showEntityPath(entity, Cesium.Color.GREEN));
     
         // Zoom in on the displayed satellites
-        await viewer.flyTo([...topEntities, ...bottomEntities]);
+        await viewer.flyTo(
+            [...topEntities, ...bottomEntities],
+            {
+                duration: 1
+            });
     }
 
     // if there is a change in any of the orbit filter radios
