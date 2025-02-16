@@ -298,25 +298,26 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     // will return the top and bottom 5 entities based on uniqueness rank for the given orbit
-    function showUniqueOrbits() {
-        
+    async function showUniqueOrbits() {
         // get which orbit radio is selected
         const selectedOrbit = getSelectedOrbit();
         // get the entities in the selected orbit
         const entities = getOrbitEntities(selectedOrbit);
-
+    
         const [topEntities, bottomEntities] = getTopBottomEntities(entities);
         
         // remove all entity paths
         removeAllEntityPaths();
-
+    
         if(topEntities.length === 0 && bottomEntities.length === 0) {
-            //throw error
             throw new Error('topEntities and bottomEntities must have 5 entities each');
         }
-
+    
         topEntities.forEach(entity => showEntityPath(entity, Cesium.Color.RED));
         bottomEntities.forEach(entity => showEntityPath(entity, Cesium.Color.GREEN));
+    
+        // Zoom in on the displayed satellites
+        await viewer.flyTo([...topEntities, ...bottomEntities]);
     }
 
     // if there is a change in any of the orbit filter radios
