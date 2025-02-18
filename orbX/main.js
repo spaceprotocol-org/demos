@@ -350,7 +350,13 @@ document.addEventListener("DOMContentLoaded", async function() {
             return;
         }
         try {
-
+            
+            // check if lowercase(random) was provided
+            if (searchId.toLowerCase() === 'random') {
+                const entities = dataSource.entities.values;
+                const randomIndex = Math.floor(Math.random() * entities.length);
+                searchId = entities[randomIndex].id;
+            }
             
             // Uncheck all of the radios.
             const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
@@ -441,6 +447,8 @@ document.addEventListener("DOMContentLoaded", async function() {
     const searchInput = document.getElementById('searchInput');
     
     searchButton.addEventListener('click', () => {
+        // extract the satNo from the search input?
+
         performSearch(searchInput.value.trim());
     });
     
@@ -450,25 +458,44 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     });
 
-    // Make it fade between different placeholders in the search bar
+    const fakePlaceholder = document.getElementById("fakePlaceholder");
+    
     const placeholders = [
         "Enter NORAD ID (e.g., 48349)",
         "Try 'Random'",
-        "25544 (ISS)",
+        "25544 (ISS)"
     ];
-    
+
     let index = 0;
-    const fakePlaceholder = document.getElementById("fakePlaceholder");
     
     setInterval(() => {
-        // Fade out the fake placeholder text
-        fakePlaceholder.classList.add("fade-out");
-        setTimeout(() => {
-            fakePlaceholder.textContent = placeholders[index];
-            index = (index + 1) % placeholders.length;
-            fakePlaceholder.classList.remove("fade-out");
-        }, 500);
+        if (document.activeElement !== searchInput && searchInput.value.trim() === "") {
+            fakePlaceholder.classList.add("fade-out");
+            setTimeout(() => {
+                fakePlaceholder.textContent = placeholders[index];
+                index = (index + 1) % placeholders.length;
+                fakePlaceholder.classList.remove("fade-out");
+            }, 500);
+        }
     }, 4000);
+    
+    searchInput.addEventListener('focus', () => {
+        fakePlaceholder.style.visibility = "hidden";
+    });
+    
+    searchInput.addEventListener('blur', () => {
+        if (searchInput.value.trim() === "") {
+            fakePlaceholder.style.visibility = "visible";
+        }
+    });
+    
+    searchInput.addEventListener('input', () => {
+        if (searchInput.value.trim() !== "") {
+            fakePlaceholder.textContent = "";
+        } else if (document.activeElement !== searchInput) {
+            fakePlaceholder.style.visibility = "visible";
+        }
+    });
 
     const homeButton = viewer.homeButton.viewModel.command;
     homeButton.afterExecute.addEventListener(function() {
