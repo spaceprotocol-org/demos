@@ -250,7 +250,34 @@ html, body, #cesiumContainer {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     font-family: 'Arial', sans-serif;
 }
-  
+
+/* Add a fade-out styling for the search bar placeholder */
+.searchContainer {
+    position: relative;
+}
+
+#searchInput {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+}
+
+.fake-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 10px; /* adjust according to your input's padding */
+    transform: translateY(-50%);
+    color: #aaa;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    z-index: 1;
+}
+
+.fake-placeholder.fade-out {
+    opacity: 0;
+}
+
+
 h2 {
     margin-top: 0;
     color: #4d90fe;
@@ -601,3 +628,4 @@ button:hover {
     align-items: center;
     gap: 5px;
 }
+

@@ -450,6 +450,26 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     });
 
+    // Make it fade between different placeholders in the search bar
+    const placeholders = [
+        "Enter NORAD ID (e.g., 48349)",
+        "Try 'Random'",
+        "25544 (ISS)",
+    ];
+    
+    let index = 0;
+    const fakePlaceholder = document.getElementById("fakePlaceholder");
+    
+    setInterval(() => {
+        // Fade out the fake placeholder text
+        fakePlaceholder.classList.add("fade-out");
+        setTimeout(() => {
+            fakePlaceholder.textContent = placeholders[index];
+            index = (index + 1) % placeholders.length;
+            fakePlaceholder.classList.remove("fade-out");
+        }, 500);
+    }, 4000);
+
     const homeButton = viewer.homeButton.viewModel.command;
     homeButton.afterExecute.addEventListener(function() {
         removeAllEntityPaths();
