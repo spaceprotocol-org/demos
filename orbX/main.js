@@ -447,8 +447,8 @@ document.addEventListener("DOMContentLoaded", async function() {
     const searchInput = document.getElementById('searchInput');
     
     searchButton.addEventListener('click', () => {
-        // extract the satNo from the search input?
-
+        // extract the satNo from the search input
+        
         performSearch(searchInput.value.trim());
     });
     
@@ -520,28 +520,17 @@ document.addEventListener("DOMContentLoaded", async function() {
                     : "N/A";
                 return `<li>
                     Score: <b>${uniquenessStr}</b> 
-                    (<span href="#" class="satellite-id" data-id="${satellite.id}" style="cursor: pointer; color: blue; text-decoration: underline;">
+                    (<a href="#" class="satellite-id" data-id="${satellite.id}" style="cursor: pointer; color: blue; text-decoration: underline;">
                         ${satellite.id}
-                    </span>)
+                    </a>)
                     ${satellite.name}
                 </li>`;
             }).join('')}
         </ul>`;
     }
 
-    // After you update the infobox content, attach event listeners:
-    function attachOrbitToggleHandlers() {
-        const ids = document.querySelectorAll('.satellite-id');
-        ids.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const noradId = link.getAttribute('data-id');
-                toggleOrbit(noradId);
-            });
-        });
-    }
-
     function attachNeighbourLinkHandlers(selector = '.satellite-id') {
+        console.log("called link handler")
         const links = document.querySelectorAll(selector);
         links.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -601,6 +590,31 @@ document.addEventListener("DOMContentLoaded", async function() {
         attachNeighbourLinkHandlers('.satellite-id');
     }
 
+    function generateRankingRow(satellite, index) {
+        const uniqueness = satellite.properties.uniqueness?.getValue();
+        const uniquenessStr = (typeof uniqueness === 'number')
+            ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
+            : "N/A";
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="score-cell">${uniquenessStr}</td>
+                <td><a href="#" class="satellite-id" data-id="${satellite.id}">${satellite.id}</a></td>
+                <td class="sat-name">${satellite.name || "N/A"}</td>
+            </tr>
+        `;
+    }
+    
+    function generateNeighbourRow(satellite, index) {
+        return `
+            <tr class="neighbour-row" data-id="${satellite.id}">
+                <td>${index + 1}</td>
+                <td><a href="#" class="satellite-id" data-id="${satellite.id}">${satellite.id}</a></td>
+                <td class="neighbour-list-sat-name">${satellite.name}</td>
+            </tr>
+        `;
+    }
+
     function handleOrbitToggle() {
         // console.log("handleOrbitToggle called");
         removeEntities();
@@ -611,27 +625,9 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     function renderRankings(topEntities, bottomEntities) {
-        // get the selected orbit
         const selectedOrbit = getSelectedOrbit();
-
-        // Helper to render a table given a title, indicator class and list of entities
         const renderTable = (title, data, indicatorClass) => {
-            // Map each entity to a table row. Adjust property names as needed.
-            const rows = data.map((entity, index) => {
-                const uniqueness = entity.properties.uniqueness.getValue(Cesium.JulianDate.now());
-                const uniquenessStr = (typeof uniqueness === 'number')
-                    ? (uniqueness < 0.01 ? uniqueness.toExponential(2) : uniqueness.toFixed(2))
-                    : "N/A";
-                return `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td class="score-cell">${uniquenessStr}</td>
-                        <td><a href="#" class="satellite-id">(${entity.id})</a></td>
-                        <td class="sat-name">${entity.name || "N/A"}</td>
-                    </tr>
-                `;
-            }).join("");
-            
+            const rows = data.map((entity, index) => generateRankingRow(entity, index)).join("");
             return `
                 <div class="rankings-card">
                     <div class="card-header">
@@ -647,9 +643,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                                 <th>Satellite Name</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
+                        <tbody>${rows}</tbody>
                     </table>
                     <div class="table-footer">
                         ${title.includes('Most')
@@ -674,15 +668,20 @@ document.addEventListener("DOMContentLoaded", async function() {
         const topBottomInfoBox = document.getElementById('topBottomInfoBox');
         topBottomInfoBox.innerHTML = renderRankings(topEntities, bottomEntities);
         topBottomInfoBox.style.display = 'block';
+        attachNeighbourLinkHandlers('.satellite-id');
     }
 
     function generateNeighbourSatelliteList(satellites) {
-        
+        const rows = satellites.list.map((sat, index) => generateNeighbourRow(sat, index)).join("");
+
         let html = `
         <div class="neighbour-list-container">
           <div class="neighbour-list-rankings-card">
             <div class="neighbour-list-card-header">
-              <h2 class="neighbour-list-target-satellite">10 Nearest Satellites for NORAD ID: <span class="neighbour-list-target-badge">${satellites.targetId}</span></h2>
+              <h2 class="neighbour-list-target-satellite">
+              10 Nearest Satellites for NORAD ID: 
+              <span class="neighbour-list-target-badge">${satellites.targetId}</span>
+              </h2>
             </div>
             <table class="neighbour-list-rankings-table">
               <thead>
@@ -699,7 +698,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 <tr class="neighbour-row" data-id="${sat.id}">
                     <td>${index + 1}</td>
                     <td>
-                    <a href="#" class="satellite-id" data-id="${sat.id}">(${sat.id})</a>
+                    <a href="#" class="satellite-id" data-id="${sat.id}">${sat.id}</a>
                     </td>
                     <td class="neighbour-list-sat-name">${sat.name}</td>
                 </tr>`;
