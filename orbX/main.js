@@ -421,10 +421,10 @@ document.addEventListener("DOMContentLoaded", async function() {
             removeEntities();
             
             // Render each neighbour's orbit in red.
-            neighbourEntities.forEach(neighbour => showEntityPath(neighbour, Cesium.Color.RED));
+            neighbourEntities.forEach(neighbour => showEntityPath(neighbour, Cesium.Color.YELLOW));
         
             // Render the searched satellite's orbit in green.
-            showEntityPath(searchedEntity, Cesium.Color.GREEN);
+            showEntityPath(searchedEntity, Cesium.Color.BLUE);
 
             await viewer.flyTo(
                 [...neighbourEntities, searchedEntity], 
@@ -443,26 +443,104 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }
 
-    const searchButton = document.getElementById('search-btn');
-    const searchInput = document.getElementById('searchInput');
+    // const searchButton = document.getElementById('search-btn');
+    // const searchInput = document.getElementById('searchInput');
     
-    searchButton.addEventListener('click', () => {
-        // extract the satNo from the search input
+    // searchButton.addEventListener('click', () => {
+    //     // extract the satNo from the search input
         
-        performSearch(searchInput.value.trim());
+    //     performSearch(searchInput.value.trim());
+    // });
+    
+    // searchInput.addEventListener('keydown', (event) => {
+    //     if (event.key === 'Enter') {
+    //         performSearch(searchInput.value.trim());
+    //     }
+    // });
+
+    const searchInput = document.getElementById('searchInput');
+    const actionBtn = document.getElementById('action-btn');
+    const dropdownContent = document.querySelector('.dropdown-content');
+    let selectedMode = 'Search'; // Default
+    const arrow = actionBtn.querySelector('.arrow');
+    const textSpan = actionBtn.querySelector('.text');
+    
+    // When the main part of the button is clicked (excluding the arrow), trigger search.
+    actionBtn.addEventListener('click', (e) => {
+        if (e.target.closest('.arrow')) {
+            // Do nothing here; arrow is handled below.
+            return;
+        }
+        performSearchAction();
     });
     
-    searchInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            performSearch(searchInput.value.trim());
+    // When the arrow is clicked, toggle the dropdown.
+    arrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (dropdownContent.style.display === 'block') {
+            dropdownContent.style.display = 'none';
+            arrow.classList.remove('active');
+        } else {
+            dropdownContent.style.display = 'block';
+            arrow.classList.add('active');
         }
     });
+    
+    // Hide dropdown when clicking anywhere else.
+    document.addEventListener('click', () => {
+        dropdownContent.style.display = 'none';
+        arrow.classList.remove('active');
+    });
+    
+    // Update the mode when a dropdown option is clicked.
+    dropdownContent.querySelectorAll('a').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            selectedMode = item.getAttribute('data-mode');
+            // Update only the text portion, so the arrow remains.
+            textSpan.textContent = selectedMode;
+            
+            if (selectedMode.toLowerCase() === 'random') {
+                textSpan.classList.add('random-text');
+            } else {
+                textSpan.classList.remove('random-text');
+            }
+
+            dropdownContent.style.display = 'none';
+            arrow.classList.remove('active');
+            // If Random mode is selected, disable (grey out) the search input; otherwise enable it.
+            if (selectedMode.toLowerCase() === 'random') {
+                searchInput.value = '';
+                searchInput.disabled = true;
+                searchInput.style.backgroundColor = '#ccc';
+            } else {
+                searchInput.disabled = false;
+                searchInput.style.backgroundColor = '';
+            }
+        });
+    });
+    
+    // Allow pressing Enter in the search input (only when enabled).
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !searchInput.disabled) {
+            performSearchAction();
+        }
+    });
+    
+    // Trigger search based on the selected mode.
+    function performSearchAction() {
+        if (selectedMode.toLowerCase() === 'random') {
+            performSearch('random');
+        } else {
+            performSearch(searchInput.value.trim());
+        }
+    }
 
     const fakePlaceholder = document.getElementById("fakePlaceholder");
     
     const placeholders = [
         "Enter NORAD ID (e.g., 48349)",
-        "Try 'Random'",
+        // "Try 'Random'",
         "25544 (ISS)"
     ];
 
