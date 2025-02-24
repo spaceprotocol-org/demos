@@ -651,7 +651,7 @@ button:hover {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -726,7 +726,7 @@ button:hover {
 }
 
 .dropbtn .text.random-text {
-    font-size: 12px; /* or whatever size you prefer */
+    font-size: 13px;
 }
 
 /* ...existing code... */
