@@ -443,31 +443,43 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }
 
-    const searchButton = document.getElementById('search-btn');
     const searchInput = document.getElementById('searchInput');
-    
-    searchButton.addEventListener('click', () => {
-        // extract the satNo from the search input
-        
+    const searchBtn = document.getElementById('searchBtn');
+    const randomBtn = document.getElementById('randomBtn');
+    const fakePlaceholder = document.getElementById("fakePlaceholder");
+
+    // Search button functionality
+    searchBtn.addEventListener('click', () => {
         performSearch(searchInput.value.trim());
     });
-    
+
+    // Random button functionality
+    randomBtn.addEventListener('click', () => {
+        // Enable search input in case it was disabled
+        searchInput.disabled = false;
+        searchInput.style.backgroundColor = '';
+        searchInput.value = '';
+        
+        // Perform random search
+        performSearch('random');
+    });
+
+    // Allow pressing Enter in the search input
     searchInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             performSearch(searchInput.value.trim());
         }
     });
 
-    const fakePlaceholder = document.getElementById("fakePlaceholder");
-    
+    // Placeholder animation
     const placeholders = [
-        "Enter NORAD ID (e.g., 48349)",
-        "Try 'Random'",
-        "25544 (ISS)"
+        "62922 (STARLINK)",
+        "25544 (ISS)",
+        "20580 (HST)"
     ];
 
     let index = 0;
-    
+
     setInterval(() => {
         if (document.activeElement !== searchInput && searchInput.value.trim() === "") {
             fakePlaceholder.classList.add("fade-out");
@@ -478,17 +490,17 @@ document.addEventListener("DOMContentLoaded", async function() {
             }, 500);
         }
     }, 4000);
-    
+
     searchInput.addEventListener('focus', () => {
         fakePlaceholder.style.visibility = "hidden";
     });
-    
+
     searchInput.addEventListener('blur', () => {
         if (searchInput.value.trim() === "") {
             fakePlaceholder.style.visibility = "visible";
         }
     });
-    
+
     searchInput.addEventListener('input', () => {
         if (searchInput.value.trim() !== "") {
             fakePlaceholder.textContent = "";

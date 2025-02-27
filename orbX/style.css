@@ -78,7 +78,7 @@ html, body, #cesiumContainer {
 
 #sideNav {
     height: 50%;
-    width: 25%;
+    width: 26%;
     position: fixed;
     z-index: 1;
     top: 0;
@@ -629,3 +629,69 @@ button:hover {
     gap: 5px;
 }
 
+
+
+.searchContainer {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background-color: #1e1e1e;
+    color: #fff;
+    font-size: 1rem;
+    width: calc(100% - 240px); /* Adjust based on button widths */
+}
+
+.action-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4d90fe, #357ae8);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    width: 110px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 38px; /* Match input height */
+}
+
+.action-btn:hover {
+    background: linear-gradient(135deg, #5a9cff, #4285f4);
+}
+
+.random-btn {
+    background: linear-gradient(135deg, #357ae8, #2a67c4);
+}
+
+.random-btn:hover {
+    background: linear-gradient(135deg, #4285f4, #3b78e7);
+}
+
+.fake-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    color: #aaa;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    z-index: 1;
+}
+
+.fake-placeholder.fade-out {
+    opacity: 0;
+}
+
+#searchInput:disabled {
+    color: #666;
+    background-color: #333;
+}
