@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropdown Button</title>
+    <style>
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropbtn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 120px;
+            justify-content: space-between;
+        }
+
+        .dropbtn .arrow {
+            width: 12px;
+            height: 12px;
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dropbtn .arrow svg {
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            transition: transform 0.3s ease;
+        }
+
+        .dropbtn .arrow:hover {
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 120px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 5px;
+            top: 100%;
+            left: 0;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            cursor: pointer;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .arrow:hover + .dropdown-content,
+        .dropdown-content:hover {
+            display: block;
+        }
+
+        .dropbtn .arrow.active svg {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="dropdown">
+        <button class="dropbtn">
+            <span class="text">Search</span>
+            <span class="arrow">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path 
+                        d="M7 10l5 5 5-5" 
+                        fill="none" 
+                        stroke="#ffffff" 
+                        stroke-width="2" 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round"
+                    />
+                </svg>
+            </span>
+        </button>
+        <div class="dropdown-content">
+            <a onclick="selectOption('Search')">Search</a>
+            <a onclick="selectOption('Random')">Random</a>
+        </div>
+    </div>
+
+    <script>
+        function selectOption(option) {
+            const button = document.querySelector('.dropbtn .text');
+            button.textContent = option;
+            const arrow = document.querySelector('.arrow');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            
+            dropdownContent.style.display = 'none';
+            arrow.classList.remove('active');
+        }
+
+        document.querySelector('.arrow').addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdownContent = document.querySelector('.dropdown-content');
+            const isVisible = dropdownContent.style.display === 'block';
+            
+            dropdownContent.style.display = isVisible ? 'none' : 'block';
+            this.classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

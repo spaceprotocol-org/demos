@@ -1,0 +1,4 @@
+leo and meo dont have flyTo working
+most and least list not loading fully before render
+
+Make the controls and lists divs slide in on hover, add pin for pinning div in place

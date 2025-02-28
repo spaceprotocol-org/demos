@@ -421,10 +421,10 @@ document.addEventListener("DOMContentLoaded", async function() {
             removeEntities();
             
             // Render each neighbour's orbit in red.
-            neighbourEntities.forEach(neighbour => showEntityPath(neighbour, Cesium.Color.RED));
+            neighbourEntities.forEach(neighbour => showEntityPath(neighbour, Cesium.Color.YELLOW));
         
-            // Render the searched satellite's orbit in green.
-            showEntityPath(searchedEntity, Cesium.Color.GREEN);
+            // Render the searched satellite's orbit in blue
+            showEntityPath(searchedEntity, Cesium.Color.BLUE);
 
             await viewer.flyTo(
                 [...neighbourEntities, searchedEntity], 
@@ -722,11 +722,11 @@ document.addEventListener("DOMContentLoaded", async function() {
             <div class="neighbour-list-table-footer">
               <div class="neighbour-list-legend">
                 <div class="neighbour-list-legend-item">
-                  <span class="neighbour-list-color-indicator neighbour-list-color-green"></span>
+                  <span class="neighbour-list-color-indicator neighbour-list-color-blue"></span>
                   <span>Searched satellite</span>
                 </div>
                 <div class="neighbour-list-legend-item">
-                  <span class="neighbour-list-color-indicator neighbour-list-color-red"></span>
+                  <span class="neighbour-list-color-indicator neighbour-list-color-yellow"></span>
                   <span>Nearby satellites</span>
                 </div>
               </div>

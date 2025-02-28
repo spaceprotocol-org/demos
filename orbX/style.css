@@ -597,14 +597,14 @@ button:hover {
     border: 1px solid #fff;
 }
   
-.neighbour-list-color-green {
-    background-color: #34c759;
-    box-shadow: 0 0 5px rgba(52, 199, 89, 0.5);
+.neighbour-list-color-blue {
+    background-color: #3066be;
+    box-shadow: 0 0 5px rgba(48, 102, 190, 0.5);
 }
   
-.neighbour-list-color-red {
-    background-color: #ff3b30;
-    box-shadow: 0 0 5px rgba(255, 59, 48, 0.5);
+.neighbour-list-color-yellow {
+    background-color: #ffcc00;
+    box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
 }
   
 .neighbour-list-table-footer {
