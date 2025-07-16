@@ -268,6 +268,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         if (document.getElementById('radio-meo').checked) orbit = "MEO";
         if (document.getElementById('radio-geo').checked) orbit = "GEO";
         if (document.getElementById('radio-heo').checked) orbit = "HEO";
+        if (document.getElementById('radio-uct').checked) orbit = "UCT";
         console.log("getSelectedOrbit called: ", orbit);
         return orbit;
     }
@@ -301,6 +302,9 @@ document.addEventListener("DOMContentLoaded", async function() {
     async function showUniqueOrbits() {
         // get which orbit radio is selected
         const selectedOrbit = getSelectedOrbit();
+
+
+
         // get the entities in the selected orbit
         const entities = getOrbitEntities(selectedOrbit);
     
@@ -332,7 +336,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     // if there is a change in any of the orbit filter radios
-    ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'].forEach(id => {
+    ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo', 'radio-uct'].forEach(id => {
         const radio = document.getElementById(id);
         if (radio) {
             radio.addEventListener('change', function() {
@@ -359,14 +363,11 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
             
             // Uncheck all of the radios.
-            const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo'];
+            const radios = ['radio-leo', 'radio-meo', 'radio-geo', 'radio-heo', 'radio-uct'];
             radios.forEach(radio => {
                 document.getElementById(radio).checked = false;
             });
 
-            
-    
-            // If the searched entity is not found, alert and exit.
             const searchedEntity = dataSource.entities.getById(searchId);
             if (!searchedEntity) {
                 alert("NORAD ID not found in data source");
