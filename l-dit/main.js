@@ -43,11 +43,20 @@ document.addEventListener("DOMContentLoaded", async function() {
     let highlightedEntities = [];
     try {
         const latestAsset = await fetchLatestAsset();
-        const assetId = latestAsset.id;
+        const assetId = 3027900;
         
         const resource = await Cesium.IonResource.fromAssetId(assetId);
         dataSource = await Cesium.CzmlDataSource.load(resource);
-        await viewer.dataSources.add(dataSource);
+
+
+        viewer.dataSources.add(dataSource);
+
+        const ionProvider = await Cesium.IonImageryProvider.fromAssetId(2); // 3 = Cesium World Imagery
+        const layer = await Cesium.ImageryLayer.fromProviderAsync(ionProvider);
+        viewer.scene.imageryLayers.removeAll();
+        viewer.scene.imageryLayers.add(layer);
+
+        // await viewer.dataSources.add(dataSource);
         viewer.clock.currentTime = Cesium.JulianDate.now();
         viewer.clock.multiplier = 50;
         const step = 10;
