@@ -46,11 +46,17 @@ document.addEventListener("DOMContentLoaded", async function() {
     let dataSource;
     let highlightedEntities = [];
     try {
-        const latestAsset = await fetchLatestAsset();
-        const assetId = latestAsset.id;
+
+        
+
+
+        //const latestAsset = await fetchLatestAsset();
+        const assetId = 3875500;
         
         const resource = await Cesium.IonResource.fromAssetId(assetId);
         dataSource = await Cesium.CzmlDataSource.load(resource);
+
+
         await viewer.dataSources.add(dataSource);
         viewer.clock.currentTime = Cesium.JulianDate.now();
         viewer.clock.multiplier = 50;
@@ -65,6 +71,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         animationViewModel.playReverseViewModel.command.beforeExecute.addEventListener(function(commandInfo) {
             viewer.clock.multiplier -= step;
         });
+
+        const ionProvider = await Cesium.IonImageryProvider.fromAssetId(2); // 3 = Cesium World Imagery
+        const layer = await Cesium.ImageryLayer.fromProviderAsync(ionProvider);
+        viewer.scene.imageryLayers.removeAll();
+        viewer.scene.imageryLayers.add(layer);
 
         loadingScreen.style.display = 'none';
 
